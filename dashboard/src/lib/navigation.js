@@ -45,7 +45,7 @@ export const NAV_GROUPS = [
   },
   {
     title: 'الذكاء',
-    items: [{ id: 'ai-assistant', label: 'المساعد الذكي', icon: Sparkles, accent: true }],
+    items: [{ id: 'ai-assistant', label: 'المساعد الذكي', icon: Sparkles }],
   },
   {
     title: 'النظام',
@@ -55,4 +55,16 @@ export const NAV_GROUPS = [
 
 export function flattenNavItems(groups = NAV_GROUPS) {
   return groups.flatMap((group) => group.items);
+}
+
+export function mobileTabItems(groups = NAV_GROUPS) {
+  const items = flattenNavItems(groups);
+  const byId = Object.fromEntries(items.map((item) => [item.id, item]));
+  const picked = [
+    byId['ai-assistant'],
+    byId.invoices || byId.payments || byId.checks,
+    byId.projects || byId.clients,
+    byId.dashboard,
+  ].filter(Boolean);
+  return picked.filter((item, index) => picked.findIndex((entry) => entry.id === item.id) === index);
 }

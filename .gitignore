@@ -1,5 +1,7 @@
 /node_modules
-/public/hot
+/public/desktop-updates/*
+!/public/desktop-updates/.gitkeep
+!/public/desktop-updates/README.md
 /public/storage
 /public/react
 /storage/*.key
@@ -18,6 +20,9 @@ npm-debug.log
 yarn-error.log
 local_version.txt
 .env
+oday-mobile/.env
+oday-mobile/.env.local
+oday-mobile/.expo
 .phpunit.result.cache
 _ide_helper.php
 

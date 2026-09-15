@@ -32,10 +32,14 @@ export const C = {
   focus: v('focus'),
 };
 
-export const FONT_HEAD = "'Noto Kufi Arabic', sans-serif";
-export const FONT_BODY = "'IBM Plex Sans Arabic', sans-serif";
+export const FONT_SERIF = "'Fraunces', Georgia, serif";
+export const FONT_HEAD = "'Noto Sans Arabic', sans-serif";
+export const FONT_BODY = "'Noto Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif";
+export const FONT_LATIN = "'IBM Plex Sans', system-ui, sans-serif";
 
-export const cardShadow = '0 1px 2px rgba(15,18,24,0.05), 0 16px 34px -22px rgba(15,18,24,0.38)';
+export const RADIUS = { sm: 4, md: 8, pill: 999 };
+
+export const cardShadow = 'none';
 
 export const YEARS = [2027, 2026, 2025, 2024];
 
@@ -44,19 +48,24 @@ export const MONTHS = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
 ];
 
+export const MONTHS_SHORT = [
+  'ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون',
+  'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس',
+];
+
 export const PAGE_META = {
   dashboard: { title: 'نظرة عامة' },
-  projects: { title: 'المشاريع', subtitle: 'تصميم، مخططات، إشراف، وتنسيق مواقع' },
-  clients: { title: 'العملاء', subtitle: 'الملاك، المطوّرون، والجهات المتعاقدة' },
-  documents: { title: 'المستندات', subtitle: 'عقود، مخططات، ومرفقات المشاريع' },
-  invoices: { title: 'الفواتير', subtitle: 'أتعاب المراحل والدفعات المستحقة' },
-  payments: { title: 'الدفعات', subtitle: 'تحصيل الأتعاب والدفعات من العملاء' },
-  checks: { title: 'الشيكات', subtitle: 'شيكات واردة وصادرة ومتابعة الصرف' },
-  expenses: { title: 'المصاريف', subtitle: 'مصاريف المكتب، المواقع، والبرامج الهندسية' },
-  payroll: { title: 'الرواتب', subtitle: 'كادر المكتب — مهندسون، رسامون، وإداريون' },
-  reports: { title: 'التقارير', subtitle: 'أداء المشاريع والتحصيلات حسب الفترة' },
+  projects: { title: 'المشاريع' },
+  clients: { title: 'العملاء' },
+  documents: { title: 'المستندات' },
+  invoices: { title: 'الفواتير' },
+  payments: { title: 'الدفعات' },
+  checks: { title: 'الشيكات' },
+  expenses: { title: 'المصاريف' },
+  payroll: { title: 'الرواتب' },
+  reports: { title: 'التقارير' },
   'ai-assistant': { title: 'المساعد الذكي' },
-  settings: { title: 'الإعدادات', subtitle: 'هوية المكتب الهندسي، الأتعاب، والضرائب المحلية' },
+  settings: { title: 'الإعدادات' },
 };
 
 export const CURRENCIES = {
@@ -77,34 +86,34 @@ const COLOR_KEYS = [
 export const PALETTES = [
   {
     id: 'graphite-brass',
-    name: 'Graphite & Steel',
-    swatches: ['#111214', '#8B93A0', '#4E5664', '#F4F6F8'],
+    name: 'Atelier Ink',
+    swatches: ['#0A0A0A', '#BB9660', '#948C78', '#F6F4EE'],
     sidebarDark: true,
     colors: {
-      paper: '#F4F6F8',
-      dot: '#D2D7DE',
-      ink: '#12141A',
-      inkSoft: '#5A616C',
-      inkFaint: '#8A919C',
-      tint: '#E8ECF1',
-      sidebar: '#111214',
-      sidebarSoft: '#1C1E24',
-      sidebarLine: 'rgba(255,255,255,0.08)',
-      sidebarText: '#E6E8ED',
-      sidebarTextFaint: '#848B96',
-      sidebarTitle: '#F3F5F8',
-      bronze1: '#8B93A0',
-      bronze2: '#4E5664',
-      bronzeLine: 'rgba(139,147,160,0.35)',
-      burgundy: '#B45454',
-      burgundySoft: '#F6EAEA',
-      burgundyLine: '#E4C8C8',
-      emerald: '#2F6B5A',
-      emeraldSoft: '#E6F1ED',
-      emeraldLine: '#C5D9D1',
-      border: '#DCE1E8',
-      card: '#FFFFFF',
-      focus: '#4E5664',
+      paper: '#F6F4EE',
+      dot: '#E4DFD4',
+      ink: '#0A0A0A',
+      inkSoft: '#948C78',
+      inkFaint: '#948C78',
+      tint: '#EFECE4',
+      sidebar: '#0A0A0A',
+      sidebarSoft: '#111110',
+      sidebarLine: '#2A2825',
+      sidebarText: '#C8C2B3',
+      sidebarTextFaint: '#948C78',
+      sidebarTitle: '#F6F4EE',
+      bronze1: '#BB9660',
+      bronze2: '#9C7A48',
+      bronzeLine: '#2A2825',
+      burgundy: '#C1573D',
+      burgundySoft: '#EFECE4',
+      burgundyLine: '#C1573D',
+      emerald: '#5C9270',
+      emeraldSoft: '#EFECE4',
+      emeraldLine: '#5C9270',
+      border: '#E4DFD4',
+      card: '#F6F4EE',
+      focus: '#BB9660',
     },
   },
   {

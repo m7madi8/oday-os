@@ -6,21 +6,91 @@
   "author": "عدي أبو ضحى (Oday Abu Doha)",
   "license": "UNLICENSED",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 5173"
+    "preview": "vite preview --host 0.0.0.0 --port 5173",
+    "desktop:dev": "cross-env ODAY_DESKTOP=1 vite --host 0.0.0.0 --port 5173",
+    "desktop:build": "cross-env ODAY_DESKTOP=1 CSC_IDENTITY_AUTO_DISCOVERY=false vite build && electron-builder --win nsis --publish never && node scripts/publish-desktop-updates.cjs",
+    "desktop:build:mac": "cross-env ODAY_DESKTOP=1 vite build && electron-builder --mac dmg --publish never && node scripts/publish-desktop-updates.cjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
+    "electron-updater": "^6.8.9",
     "lucide-react": "^0.511.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^22.13.10",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^7.0.3",
+    "electron": "^33.4.5",
+    "electron-builder": "^25.1.8",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "vite": "^5.4.19"
+    "typescript": "^5.8.2",
+    "vite": "^5.4.19",
+    "vite-plugin-electron": "^0.28.8",
+    "vite-plugin-electron-renderer": "^0.14.6"
+  },
+  "build": {
+    "appId": "os.oday.desktop",
+    "productName": "ODAY OS",
+    "copyright": "عدي أبو ضحى",
+    "asar": true,
+    "icon": "build/icon.ico",
+    "afterPack": "./scripts/stamp-win-icon.cjs",
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "dist-electron/main.js"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "ODAY-OS-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ODAY OS",
+      "uninstallDisplayName": "ODAY OS",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.business",
+      "target": [
+        "dmg"
+      ],
+      "artifactName": "ODAY-OS.${ext}"
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://example.invalid/desktop-updates"
+    }
   }
 }

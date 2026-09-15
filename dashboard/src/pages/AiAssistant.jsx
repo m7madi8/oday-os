@@ -1,31 +1,43 @@
 import { Sparkles } from 'lucide-react';
-import { C, cardShadow } from '../theme';
+import { C, FONT_BODY, FONT_HEAD, RADIUS, cardShadow } from '../theme';
+import { BrandLogo } from '../components/BrandLogo';
 
 export function AiAssistant() {
   return (
     <div
-      className="rounded-2xl flex flex-col items-center justify-center text-center"
+      className="os-surface flex flex-col items-center justify-center text-center px-6 py-16"
       style={{
         background: C.card,
         border: `1px dashed ${C.border}`,
         boxShadow: cardShadow,
+        borderRadius: RADIUS.md,
         minHeight: 'calc(100dvh - 10rem)',
       }}
     >
       <span
-        className="flex items-center justify-center rounded-2xl mb-3"
+        className="flex items-center justify-center mb-4"
         style={{
-          width: 44,
-          height: 44,
-          background: 'linear-gradient(135deg, rgba(167,139,250,0.2) 0%, rgba(99,102,241,0.15) 100%)',
-          color: '#6366f1',
+          width: 52,
+          height: 52,
+          background: C.tint,
+          color: C.bronze1,
+          borderRadius: RADIUS.md,
         }}
       >
-        <Sparkles size={20} strokeWidth={1.8} aria-hidden="true" />
+        <Sparkles size={24} strokeWidth={1.5} aria-hidden="true" />
       </span>
-      <p className="text-sm" style={{ color: C.inkFaint }}>
+      <h2 className="text-lg mb-1" style={{ color: C.ink, fontFamily: FONT_HEAD, fontWeight: 600 }}>
         المساعد الذكي
+      </h2>
+      <p className="text-sm max-w-sm" style={{ color: C.inkSoft, fontFamily: FONT_BODY }}>
+        هذا القسم جاهز للتصميم — ستُضاف هنا أدوات الذكاء الاصطناعي للمكتب.
       </p>
+      <BrandLogo
+        variant="mark"
+        decorative
+        className="mt-8"
+        style={{ height: 28, width: 'auto', opacity: 0.28 }}
+      />
     </div>
   );
 }

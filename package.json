@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "oday": "powershell -ExecutionPolicy Bypass -File scripts/oday-live.ps1",
     "build": "vite build",
     "production": "vite build",
     "test:e2e": "playwright test --project=chromium --workers=1",

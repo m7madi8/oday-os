@@ -1,5 +1,5 @@
 import { applyPalette, setAppCurrency } from '../theme';
-import { getItem, setItem } from './storage';
+import { fetchOfficeSettings, saveOfficeSettingsApi } from './api/office';
 import { BRAND } from '../brand';
 
 export const OFFICE_KEY = 'office-settings';
@@ -111,16 +111,16 @@ export function applyOfficeAppearance(settings) {
 
 export async function loadOfficeSettings() {
   try {
-    const res = await getItem(OFFICE_KEY);
-    if (res && res.value) {
-      return mergeOfficeSettings(JSON.parse(res.value));
+    const res = await fetchOfficeSettings();
+    if (res && res.settings) {
+      return mergeOfficeSettings(res.settings);
     }
   } catch {
-    /* keep defaults */
+    /* keep defaults until the server is reachable */
   }
   return { ...DEFAULT_OFFICE_SETTINGS };
 }
 
 export async function saveOfficeSettings(settings) {
-  await setItem(OFFICE_KEY, JSON.stringify(settings));
+  await saveOfficeSettingsApi(settings);
 }

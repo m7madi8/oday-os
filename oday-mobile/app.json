@@ -1,0 +1,77 @@
+{
+  "expo": {
+    "name": "ODAY OS",
+    "slug": "oday-os",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "odayos",
+    "userInterfaceStyle": "dark",
+    "androidStatusBar": {
+      "backgroundColor": "#0a0a0a",
+      "barStyle": "light-content",
+      "translucent": true
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#0a0a0a",
+      "barStyle": "light-content"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.odayos.app",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleDevelopmentRegion": "ar",
+        "CFBundleDisplayName": "ODAY OS",
+        "ExpoLocalization_supportsRTL": true
+      }
+    },
+    "android": {
+      "package": "com.odayos.app",
+      "versionCode": 2,
+      "label": "ODAY OS",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize",
+      "supportsRtl": true,
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-localization",
+      "expo-font",
+      "expo-image"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "supportsRTL": true,
+      "router": {},
+      "eas": {
+        "projectId": "7fee98e8-cfdc-49cc-8b8e-9ef6d9cd6af7"
+      }
+    },
+    "owner": "m7madi8"
+  }
+}

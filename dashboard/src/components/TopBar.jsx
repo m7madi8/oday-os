@@ -31,7 +31,7 @@ export function TopBar({ page, year, setYear, hidden, setHidden }) {
           {meta.title}
         </h1>
         {meta.subtitle ? (
-          <p className="text-sm mt-1" style={{ color: C.inkSoft }}>{meta.subtitle}</p>
+          <p className="text-base mt-1" style={{ color: C.inkSoft }}>{meta.subtitle}</p>
         ) : null}
       </div>
 

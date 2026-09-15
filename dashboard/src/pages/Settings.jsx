@@ -13,7 +13,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { BRAND } from '../brand';
-import { C, CURRENCIES, FONT_HEAD, MONTHS, PALETTES, cardShadow, getAppCurrency } from '../theme';
+import { C, CURRENCIES, FONT_HEAD, MONTHS, PALETTES, getAppCurrency } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { CheckRow, Field, SectionCard, Segmented, SelectInput, TextArea, TextInput } from '../components/settings/Fields';
 import { COUNTRY_CODES, createId } from '../lib/officeSettings';
@@ -29,6 +29,15 @@ const TOC = [
   { id: 'accounting', label: 'المحاسبة' },
   { id: 'backup', label: 'النسخ الاحتياطي' },
 ];
+
+function scrollToSection(id) {
+  const root = document.querySelector('[data-app-scroll]');
+  const el = document.getElementById(id);
+  if (!root || !el) return;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const top = el.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop - 16;
+  root.scrollTo({ top: Math.max(0, top), behavior: reduce ? 'auto' : 'smooth' });
+}
 
 export function Settings({ settings, onChange, onSave, status, loaded, onImported }) {
   const [active, setActive] = useState('identity');
@@ -234,16 +243,16 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
   const saveLabel = status === 'saving' ? 'جارِ الحفظ' : status === 'saved' ? 'تم الحفظ' : 'حفظ الإعدادات';
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 min-w-0 pb-10">
       <div
-        className="rounded-2xl px-5 sm:px-7 py-5 flex flex-wrap items-start justify-between gap-4"
-        style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: cardShadow }}
+        className="os-surface px-5 sm:px-7 py-5 flex flex-wrap items-start justify-between gap-4"
+        style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}
       >
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: C.ink, fontFamily: FONT_HEAD }}>
+          <h1 className="phone-hide text-2xl sm:text-3xl font-bold" style={{ color: C.ink, fontFamily: FONT_HEAD }}>
             إعدادات المكتب
           </h1>
-          <p className="text-sm mt-1 max-w-xl" style={{ color: C.inkSoft }}>
+          <p className="phone-hide text-base mt-1 max-w-xl" style={{ color: C.inkSoft }}>
             بيانات المكتب الهندسي، الأتعاب، العملة، والضرائب الفلسطينية — تُحفظ على هذا الجهاز.
           </p>
         </div>
@@ -251,7 +260,7 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
           type="button"
           onClick={onSave}
           disabled={!loaded || status === 'saving'}
-          className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium min-h-11"
+          className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-base font-medium min-h-11"
           style={{ background: C.sidebar, color: C.sidebarTitle }}
         >
           {status === 'saving' ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : null}
@@ -260,13 +269,13 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
         </button>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-5 items-start">
+      <div className="settings-shell">
         <nav
-          className="w-full xl:w-[13.75rem] xl:sticky xl:top-4 shrink-0 rounded-2xl p-2"
-          style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: cardShadow }}
+          className="os-surface settings-toc p-2"
+          style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8 }}
           aria-label="أقسام الإعدادات"
         >
-          <div className="flex xl:flex-col gap-1 overflow-x-auto xl:overflow-visible pb-0.5">
+          <div className="settings-toc-list">
             {TOC.map((item, index) => {
               const selected = active === item.id;
               return (
@@ -276,16 +285,15 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
                   onClick={(event) => {
                     event.preventDefault();
                     setActive(item.id);
-                    const el = document.getElementById(item.id);
-                    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                    el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+                    scrollToSection(item.id);
                   }}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] whitespace-nowrap min-h-11"
+                  className="flex items-center gap-2.5 px-3 py-2.5 text-[13px] whitespace-nowrap min-h-11"
                   aria-current={selected ? 'true' : undefined}
                   style={{
                     background: selected ? C.tint : 'transparent',
                     color: selected ? C.ink : C.inkSoft,
                     fontWeight: selected ? 600 : 400,
+                    borderRadius: 8,
                   }}
                 >
                   <span className="tabular-nums text-[10px]" style={{ color: C.inkFaint }}>
@@ -579,8 +587,8 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
             ) : (
               <div className="space-y-2">
                 <div
-                  className="hidden sm:grid gap-2 px-2 text-[11px]"
-                  style={{ gridTemplateColumns: '1fr 7.5rem 7.5rem 2.75rem', color: C.inkFaint }}
+                  className="hidden md:grid service-row-head gap-2 px-2 text-[11px]"
+                  style={{ color: C.inkFaint }}
                 >
                   <span>المرحلة / الخدمة</span>
                   <span>الكمية</span>
@@ -590,11 +598,11 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
                 {settings.projectTypes.map((row) => (
                   <div
                     key={row.id}
-                    className="grid grid-cols-1 sm:grid-cols-[1fr_7.5rem_7.5rem_2.75rem] gap-2 items-center rounded-xl p-2 sm:p-1.5"
+                    className="service-row items-center rounded-lg p-2 sm:p-1.5"
                     style={{ background: C.paper, border: `1px solid ${C.border}` }}
                   >
                     <div className="flex items-center gap-1 min-w-0">
-                      <span className="hidden sm:flex p-1" style={{ color: C.inkFaint }} aria-hidden="true">
+                      <span className="hidden md:flex p-1" style={{ color: C.inkFaint }} aria-hidden="true">
                         <GripVertical size={14} />
                       </span>
                       <TextInput
@@ -862,82 +870,8 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
           </SectionCard>
 
           <SectionCard
-            id="backup"
-            num={8}
-            title="النسخ والاستيراد"
-            hint="صدّر نسخة كاملة من بيانات المكتب أو استرجعها من ملف محفوظ على جهازك."
-          >
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={exportBackup}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm min-h-11"
-                style={{ background: C.sidebar, color: C.sidebarTitle }}
-              >
-                <Download size={15} aria-hidden="true" />
-                تصدير نسخة
-              </button>
-              <button
-                type="button"
-                onClick={() => fileBackupRef.current?.click()}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm min-h-11"
-                style={{ background: C.paper, border: `1px solid ${C.border}`, color: C.ink }}
-              >
-                <Upload size={15} aria-hidden="true" />
-                استيراد نسخة
-              </button>
-              <input
-                ref={fileBackupRef}
-                type="file"
-                accept="application/json,.json"
-                className="hidden"
-                onChange={(e) => {
-                  onBackupFile(e.target.files?.[0]);
-                  e.target.value = '';
-                }}
-              />
-            </div>
-            <p className="text-[12px] mt-3" style={{ color: C.inkFaint }}>
-              الملف يبقى عندك. لا توجد مزامنة سحابية في هذا القسم.
-            </p>
-            {importError && (
-              <p className="text-[12px] mt-2" style={{ color: C.burgundy }} role="alert">
-                {importError}
-              </p>
-            )}
-            {confirmImport && (
-              <div
-                className="mt-4 rounded-2xl p-4"
-                style={{ background: C.burgundySoft, border: `1px solid ${C.burgundyLine}` }}
-              >
-                <p className="text-sm" style={{ color: C.burgundy }}>
-                  الاستيراد يستبدل الإعدادات الحالية. هل تريد المتابعة؟
-                </p>
-                <div className="flex gap-2 mt-3">
-                  <button
-                    type="button"
-                    onClick={applyImport}
-                    className="rounded-xl px-4 py-2 text-sm min-h-11 text-white"
-                    style={{ background: C.burgundy }}
-                  >
-                    نعم، استورد
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmImport(null)}
-                    className="rounded-xl px-4 py-2 text-sm min-h-11"
-                    style={{ background: C.card, border: `1px solid ${C.border}`, color: C.ink }}
-                  >
-                    إلغاء
-                  </button>
-                </div>
-              </div>
-            )}
-          </SectionCard>
-
-          <SectionCard
             id="accounting"
-            num={9}
+            num={8}
             title="المحاسبة والفوترة"
             hint="ترقيم فواتير الأتعاب، بداية السنة المالية، ومدة السداد الافتراضية."
           >
@@ -990,6 +924,80 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
               معاينة: {settings.invoicePrefix}-{String(Number(settings.invoiceNext) || 1).padStart(3, '0')}
               {' · '}العملة الحالية {getAppCurrency().label}
             </p>
+          </SectionCard>
+
+          <SectionCard
+            id="backup"
+            num={9}
+            title="النسخ والاستيراد"
+            hint="صدّر نسخة كاملة من بيانات المكتب أو استرجعها من ملف محفوظ على جهازك."
+          >
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={exportBackup}
+                className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm min-h-11"
+                style={{ background: C.sidebar, color: C.sidebarTitle }}
+              >
+                <Download size={15} aria-hidden="true" />
+                تصدير نسخة
+              </button>
+              <button
+                type="button"
+                onClick={() => fileBackupRef.current?.click()}
+                className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm min-h-11"
+                style={{ background: C.paper, border: `1px solid ${C.border}`, color: C.ink }}
+              >
+                <Upload size={15} aria-hidden="true" />
+                استيراد نسخة
+              </button>
+              <input
+                ref={fileBackupRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  onBackupFile(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+            <p className="text-[12px] mt-3" style={{ color: C.inkFaint }}>
+              الملف يبقى عندك. لا توجد مزامنة سحابية في هذا القسم.
+            </p>
+            {importError && (
+              <p className="text-[12px] mt-2" style={{ color: C.burgundy }} role="alert">
+                {importError}
+              </p>
+            )}
+            {confirmImport && (
+              <div
+                className="mt-4 rounded-lg p-4"
+                style={{ background: C.burgundySoft, border: `1px solid ${C.burgundyLine}` }}
+              >
+                <p className="text-sm" style={{ color: C.burgundy }}>
+                  الاستيراد يستبدل الإعدادات الحالية. هل تريد المتابعة؟
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={applyImport}
+                    className="rounded-lg px-4 py-2 text-sm min-h-11 text-white"
+                    style={{ background: C.burgundy }}
+                  >
+                    نعم، استورد
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmImport(null)}
+                    className="rounded-lg px-4 py-2 text-sm min-h-11"
+                    style={{ background: C.card, border: `1px solid ${C.border}`, color: C.ink }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
           </SectionCard>
         </div>
       </div>

@@ -1,81 +1,135 @@
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
-  ClipboardList,
+  Banknote,
+  CircleDollarSign,
   FolderKanban,
-  HardHat,
-  Scale,
+  ScrollText,
   TrendingDown,
   TrendingUp,
-  Wallet,
 } from 'lucide-react';
-import { C, FONT_HEAD, MONTHS, cardShadow, count, money, pad2 } from '../theme';
+import { C, FONT_HEAD, MONTHS, RADIUS, count, money, pad2 } from '../theme';
 import { FinanceCard, KpiMini, MonthCard, StatCard } from '../components/Cards';
 import { QuickNotes } from '../components/QuickNotes';
+import { fetchOverview } from '../lib/api/office';
+import { keys } from '../lib/query';
+import { ErrorState, LoadingBlock } from '../components/ui/Actions';
 
-export function Dashboard({ year, hidden }) {
-  const monthsData = MONTHS.map((name) => ({ name, value: 0, hasData: false }));
-  const activeMonths = monthsData.filter((m) => m.hasData);
+function monthTone(index, year) {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  if (year < currentYear) return 'past';
+  if (year > currentYear) return 'future';
+  if (index < currentMonth) return 'past';
+  if (index > currentMonth) return 'future';
+  return 'current';
+}
+
+export function Dashboard({ year, hidden, onNavigate }) {
+  const overview = useQuery({ queryKey: keys.overview, queryFn: fetchOverview });
+  const data = overview.data;
+  const monthsData = useMemo(
+    () => MONTHS.map((name, index) => ({
+      name,
+      value: 0,
+      hasData: false,
+      tone: monthTone(index + 1, year),
+    })),
+    [year],
+  );
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard icon={FolderKanban} label="مشاريع نشطة" value={count(0, hidden)} delayMs={0} />
-        <StatCard icon={ClipboardList} label="عقود قيد التنفيذ" value={count(0, hidden)} delayMs={60} />
-        <StatCard icon={Wallet} label="دفعات مستحقة" value={money(0, hidden)} delayMs={120} />
-        <StatCard icon={HardHat} label="زيارات إشراف" value={count(0, hidden)} delayMs={180} />
+    <div className="space-y-6 sm:space-y-8 min-w-0">
+      {overview.isLoading ? <LoadingBlock /> : null}
+      {overview.isError ? (
+        <ErrorState message={overview.error?.message} onRetry={() => overview.refetch()} />
+      ) : null}
+
+      <div className="kpi-row">
+        <StatCard icon={CircleDollarSign} label="مستحقات" value={money(data?.kpis?.receivables || 0, hidden)} delayMs={0} onOpen={onNavigate ? () => onNavigate('invoices') : undefined} />
+        <StatCard icon={ScrollText} label="شيكات قادمة" value={count(data?.kpis?.upcoming_cheques_count || 0, hidden)} delayMs={60} onOpen={onNavigate ? () => onNavigate('checks') : undefined} />
+        <StatCard icon={FolderKanban} label="مشاريع نشطة" value={count(data?.kpis?.active_projects || 0, hidden)} delayMs={120} onOpen={onNavigate ? () => onNavigate('projects') : undefined} />
+        <StatCard icon={Banknote} label="دفعات قادمة" value={count(data?.kpis?.upcoming_payments_count || 0, hidden)} delayMs={180} onOpen={onNavigate ? () => onNavigate('payments') : undefined} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <FinanceCard kind="income" icon={TrendingUp} label="إيرادات العقود" value={money(0, hidden)} year={year} delayMs={240} />
-        <FinanceCard kind="expense" icon={TrendingDown} label="مصاريف المكتب والمواقع" value={money(0, hidden)} year={year} delayMs={300} />
-        <FinanceCard kind="net" icon={Scale} label="صافي الأداء" value={money(0, hidden)} year={year} delayMs={360} />
+      <div className="finance-row">
+        <FinanceCard
+          kind="net"
+          featured
+          label="صافي المستحقات"
+          value={money(data?.kpis?.receivables || 0, hidden)}
+          year={year}
+          delayMs={240}
+          months={monthsData}
+        />
+        <FinanceCard
+          kind="expense"
+          icon={TrendingDown}
+          label="شيكات قادمة"
+          value={money(data?.kpis?.upcoming_cheques_total || 0, hidden)}
+          year={year}
+          delayMs={300}
+        />
+        <FinanceCard
+          kind="income"
+          icon={TrendingUp}
+          label="دفعات قادمة"
+          value={money(data?.kpis?.upcoming_payments_total || 0, hidden)}
+          year={year}
+          delayMs={360}
+        />
       </div>
 
       <QuickNotes />
 
       <section
-        className="rounded-2xl p-4 sm:p-6"
-        style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: cardShadow }}
+        className="os-surface os-overview-panel p-4 sm:p-6 min-w-0"
+        style={{
+          background: 'var(--paper-50)',
+          border: '1px solid var(--paper-200)',
+          borderRadius: RADIUS.md,
+        }}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-base sm:text-lg font-semibold" style={{ color: C.ink, fontFamily: FONT_HEAD }}>
-              التوزيع الشهري
-            </h3>
-            <p className="text-xs sm:text-sm mt-0.5" style={{ color: C.inkSoft }}>
-              إيرادات الأتعاب والتحصيلات حسب الشهر · {year}
-            </p>
-          </div>
+        <div className="mb-4">
+          <h3 className="text-xl" style={{ color: 'var(--black-950)', fontFamily: FONT_HEAD, fontWeight: 600 }}>
+            تنبيهات وتحصيلات
+          </h3>
+          <p className="text-base mt-0.5" style={{ color: C.inkSoft }}>
+            من قاعدة بيانات المكتب مباشرة · {year}
+          </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
           <KpiMini
-            label="أعلى شهر تحصيلاً"
-            value="—"
-            sub="يُعرض بعد تسجيل أول عقد"
+            label="إجمالي المستحقات"
+            value={money(data?.kpis?.receivables || 0, hidden)}
+            sub="من الفواتير المفتوحة"
           />
           <KpiMini
-            label="متوسط التحصيل"
-            value="—"
-            sub={activeMonths.length ? `${activeMonths.length} أشهر مسجّلة` : 'لا بيانات بعد'}
+            label="نشاط أخير"
+            value={data?.activity?.[0]?.label || '—'}
+            sub={data?.activity?.length ? `${data.activity.length} حركة` : 'لا بيانات بعد'}
           />
           <KpiMini
-            label="إجمالي السنة"
-            value={money(0, hidden)}
-            sub="مجموع الأتعاب المحصّلة"
+            label="تنبيهات"
+            value={String(data?.alerts?.length || 0)}
+            sub={data?.alerts?.[0]?.title || 'لا تنبيهات معلّقة'}
           />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 sm:gap-3">
-          {monthsData.map((m, i) => (
+        <div className="month-grid phone-hide">
+          {monthsData.map((month, index) => (
             <MonthCard
-              key={m.name}
-              index={i + 1}
-              name={m.name}
-              value={m.value}
-              hasData={m.hasData}
+              key={month.name}
+              index={index + 1}
+              name={month.name}
+              value={month.value}
+              hasData={month.hasData}
               hidden={hidden}
               money={money}
               pad2={pad2}
+              tone={month.tone}
             />
           ))}
         </div>

@@ -1,92 +1,157 @@
-import { C, FONT_HEAD, FONT_BODY, cardShadow } from '../theme';
+import { ArrowUpRight, CalendarDays } from 'lucide-react';
+import { C, FONT_HEAD, FONT_BODY, FONT_SERIF, MONTHS_SHORT, RADIUS } from '../theme';
 import { BrandLogo } from './BrandLogo';
 
-export function StatCard({ icon: Icon, label, value, delayMs }) {
+const ICON_STROKE = 1.5;
+const PLACEHOLDER_BARS = [35, 55, 40, 70, 50, 85, 60, 45, 65, 30, 75, 48];
+
+export function StatCard({ icon: Icon, label, value, delayMs, onOpen }) {
+  const Tag = onOpen ? 'button' : 'div';
+
   return (
-    <div
-      className="rounded-2xl p-4 sm:p-5 fade-up"
-      style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: cardShadow, animationDelay: `${delayMs}ms` }}
+    <Tag
+      type={onOpen ? 'button' : undefined}
+      onClick={onOpen}
+      className={`os-stat-card p-4 sm:p-5 fade-up ${onOpen ? 'os-stat-card-action' : ''}`}
+      style={{
+        background: 'var(--paper-50)',
+        border: '1px solid var(--paper-200)',
+        borderRadius: RADIUS.md,
+        animationDelay: `${delayMs}ms`,
+        textAlign: 'start',
+      }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className="flex items-center justify-center rounded-xl"
-          style={{ width: 34, height: 34, background: C.tint, color: C.ink }}
-        >
-          <Icon size={17} strokeWidth={1.7} aria-hidden="true" />
+      <div className="os-stat-top flex items-start justify-end mb-3">
+        <span className="os-stat-chip">
+          <Icon size={20} strokeWidth={ICON_STROKE} aria-hidden="true" style={{ color: 'var(--warm-500)' }} />
         </span>
+        {onOpen ? (
+          <ArrowUpRight className="os-stat-arrow" size={14} strokeWidth={2} aria-hidden="true" />
+        ) : null}
       </div>
-      <div className="text-xl sm:text-2xl font-semibold tabular-nums whitespace-nowrap overflow-hidden" style={{ color: C.ink }}>
-        {value}
+      <div>
+        <div
+          className="os-stat-number tabular-nums whitespace-nowrap overflow-hidden"
+          style={{ color: 'var(--black-950)', fontFamily: FONT_SERIF, fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 500, lineHeight: 1.15 }}
+        >
+          {value}
+        </div>
+        <div className="os-stat-label mt-1.5" style={{ color: 'var(--c-inkSoft)', fontSize: '1.0625rem', fontWeight: 500 }}>
+          {label}
+        </div>
       </div>
-      <div className="text-xs sm:text-sm mt-1" style={{ color: C.inkSoft }}>
-        {label}
+    </Tag>
+  );
+}
+
+function HeroBars({ months }) {
+  const values = (months || []).map((month) => Math.abs(Number(month.value) || 0));
+  const hasData = values.some((value) => value > 0);
+  const max = Math.max(...values, 1);
+  const heights = hasData
+    ? values.map((value) => Math.max(12, Math.round((value / max) * 100)))
+    : PLACEHOLDER_BARS;
+
+  return (
+    <div className="os-hero-chart" aria-hidden={!hasData}>
+      <div className="os-hero-bars">
+        {heights.map((height, index) => (
+          <span key={MONTHS_SHORT[index] || index} style={{ height: `${height}%` }} />
+        ))}
+      </div>
+      <div className="os-hero-bars-labels">
+        {MONTHS_SHORT.map((label) => (
+          <span key={label}>{label}</span>
+        ))}
       </div>
     </div>
   );
 }
 
-export function FinanceCard({ kind, icon: Icon, label, value, year, delayMs }) {
-  let bg, text, sub, border, iconBg;
-  if (kind === 'net') {
-    bg = `linear-gradient(150deg, ${C.bronze1} 0%, ${C.bronze2} 100%)`;
-    text = '#211803';
-    sub = 'rgba(33,24,3,0.62)';
-    border = 'transparent';
-    iconBg = 'rgba(255,255,255,0.3)';
-  } else if (kind === 'expense') {
-    bg = C.burgundySoft;
-    text = C.burgundy;
-    sub = '#8C625C';
-    border = C.burgundyLine;
-    iconBg = 'rgba(124,59,52,0.12)';
-  } else {
-    bg = C.emeraldSoft;
-    text = C.emerald;
-    sub = '#5C7A6B';
-    border = C.emeraldLine;
-    iconBg = 'rgba(60,94,76,0.12)';
-  }
+export function FinanceCard({ kind, icon: Icon, label, value, year, delayMs, featured = false, months }) {
+  const trendColor = kind === 'expense'
+    ? 'var(--danger-500)'
+    : kind === 'income'
+      ? 'var(--success-500)'
+      : 'var(--warm-500)';
 
   return (
     <div
-      className="rounded-2xl p-5 sm:p-6 fade-up min-w-0 overflow-hidden"
-      style={{ background: bg, border: `1px solid ${border}`, boxShadow: cardShadow, animationDelay: `${delayMs}ms` }}
+      className={`os-finance-card fade-up min-w-0 overflow-hidden ${featured ? 'is-hero' : ''} is-${kind} p-5 sm:p-6`}
+      style={{
+        background: 'var(--paper-50)',
+        border: featured ? '1px solid var(--gold-500)' : '1px solid var(--paper-200)',
+        borderRadius: RADIUS.md,
+        animationDelay: `${delayMs}ms`,
+      }}
     >
-      <div className="flex items-center justify-between mb-5">
-        <span className="flex items-center justify-center rounded-xl" style={{ width: 36, height: 36, background: iconBg, color: text }}>
-          <Icon size={18} strokeWidth={1.7} aria-hidden="true" />
-        </span>
-        {kind === 'net' && (
-          <span
-            className="text-[11px] px-2 py-1 rounded-full"
-            style={{ background: 'rgba(255,255,255,0.32)', color: text, fontFamily: FONT_BODY }}
-          >
-            الصافي
+      <div className="os-finance-top flex items-center justify-between mb-5">
+        {featured ? (
+          <span className="os-hero-tag">
+            <CalendarDays size={12} strokeWidth={2} aria-hidden="true" />
+            {year}
           </span>
+        ) : (
+          <>
+            <span className={`os-trend-chip is-${kind}`}>
+              {Icon ? <Icon size={20} strokeWidth={ICON_STROKE} aria-hidden="true" style={{ color: trendColor }} /> : null}
+            </span>
+            <span className="os-trend-year text-sm" style={{ color: 'var(--c-inkSoft)', fontFamily: FONT_SERIF }}>{year}</span>
+          </>
         )}
       </div>
-      <div className="text-2xl sm:text-3xl font-bold tabular-nums whitespace-nowrap overflow-hidden" style={{ color: text }}>
+      {featured ? (
+        <div className="os-hero-label" style={{ color: 'var(--c-inkSoft)' }}>{label}</div>
+      ) : null}
+      <div
+        className="os-finance-number tabular-nums whitespace-nowrap overflow-hidden"
+        style={{
+          color: 'var(--black-950)',
+          fontFamily: FONT_SERIF,
+          fontSize: featured ? 'clamp(1.6rem, 3.6vw, 2.15rem)' : 'clamp(1.35rem, 3vw, 1.75rem)',
+          fontWeight: 500,
+          lineHeight: 1.1,
+        }}
+      >
         {value}
       </div>
-      <div className="flex items-center justify-between mt-2 gap-2 min-w-0">
-        <span className="text-xs sm:text-sm truncate min-w-0" style={{ color: sub }}>{label}</span>
-        <span className="text-xs sm:text-sm tabular-nums shrink-0" style={{ color: sub }}>{year}</span>
+      <div className={`os-finance-label mt-2 min-w-0 ${featured ? 'os-hero-label-desktop' : ''}`}>
+        <span className="text-base truncate block" style={{ color: 'var(--c-inkSoft)' }}>{label}</span>
       </div>
+      {featured ? <HeroBars months={months} /> : null}
     </div>
   );
 }
 
-export function MonthCard({ index, name, value, hasData, hidden, money, pad2 }) {
+export function MonthCard({ index, name, value, hasData, hidden, money, pad2, tone = 'future' }) {
+  const isCurrent = tone === 'current';
+  const opacity = isCurrent ? 1 : tone === 'past' ? 0.4 : 0.2;
+  const barWidth = hasData ? '55%' : isCurrent ? '12%' : '0%';
+
   return (
     <div
-      className="rounded-xl p-3 sm:p-4 flex flex-col justify-between min-w-0"
-      style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: cardShadow, minHeight: 108 }}
+      data-month-tone={tone}
+      className="os-surface p-3 sm:p-4 flex flex-col justify-between min-w-0"
+      style={{
+        background: 'var(--paper-50)',
+        border: '1px solid var(--paper-200)',
+        borderRadius: RADIUS.md,
+        minHeight: 108,
+      }}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-medium min-w-0 truncate" style={{ color: C.ink }}>{name}</span>
         <span
-          className="text-xs tabular-nums leading-none px-1 py-1 rounded-md shrink-0"
-          style={{ color: C.inkFaint, background: C.tint }}
+          className="text-sm min-w-0 truncate"
+          style={{
+            color: isCurrent ? 'var(--black-950)' : 'var(--warm-500)',
+            fontWeight: isCurrent ? 500 : 400,
+          }}
+        >
+          {name}
+        </span>
+        <span
+          className="text-xs tabular-nums leading-none px-1 py-1 shrink-0"
+          style={{ color: 'var(--warm-500)', borderRadius: RADIUS.sm }}
         >
           {pad2(index)}/12
         </span>
@@ -94,17 +159,24 @@ export function MonthCard({ index, name, value, hasData, hidden, money, pad2 }) 
 
       <div className="min-w-0">
         <div
-          className="text-sm sm:text-base font-semibold tabular-nums mb-2 whitespace-nowrap overflow-hidden"
-          style={{ color: hasData ? C.ink : C.inkFaint }}
+          className="text-sm sm:text-base tabular-nums mb-2 whitespace-nowrap overflow-hidden"
+          style={{
+            color: isCurrent ? 'var(--black-950)' : 'var(--warm-500)',
+            fontFamily: FONT_SERIF,
+            fontWeight: isCurrent ? 500 : 400,
+            opacity: tone === 'future' ? 0.7 : 1,
+          }}
         >
           {hasData ? money(value, hidden) : '—'}
         </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: C.tint }}>
+        <div className="h-1 overflow-hidden" style={{ background: 'var(--paper-100)', borderRadius: RADIUS.pill }}>
           <div
-            className="h-full rounded-full"
+            className="h-full"
             style={{
-              width: hasData ? '55%' : '0%',
-              background: hasData ? (value >= 0 ? C.emerald : C.burgundy) : 'transparent',
+              width: barWidth,
+              background: 'var(--black-950)',
+              opacity,
+              borderRadius: RADIUS.pill,
             }}
           />
         </div>
@@ -115,10 +187,17 @@ export function MonthCard({ index, name, value, hasData, hidden, money, pad2 }) 
 
 export function KpiMini({ label, value, sub }) {
   return (
-    <div className="w-full sm:flex-1 min-w-0 px-4 py-3 rounded-xl" style={{ background: C.tint }}>
-      <div className="text-xs mb-1" style={{ color: C.inkSoft }}>{label}</div>
-      <div className="text-lg font-semibold tabular-nums" style={{ color: C.ink }}>{value}</div>
-      {sub && <div className="text-[11px] mt-0.5" style={{ color: C.inkFaint }}>{sub}</div>}
+    <div
+      className="os-surface w-full sm:flex-1 min-w-0 px-4 py-3"
+      style={{
+        background: 'var(--paper-50)',
+        border: '1px solid var(--paper-200)',
+        borderRadius: RADIUS.md,
+      }}
+    >
+      <div className="mb-1" style={{ color: 'var(--c-inkSoft)', fontSize: '1.0625rem' }}>{label}</div>
+      <div className="tabular-nums" style={{ color: 'var(--black-950)', fontFamily: FONT_SERIF, fontSize: 22, fontWeight: 500 }}>{value}</div>
+      {sub && <div className="mt-0.5" style={{ color: 'var(--c-inkSoft)', fontSize: '1rem' }}>{sub}</div>}
     </div>
   );
 }
@@ -128,19 +207,19 @@ export function PlaceholderPage({ id, pageMeta, navGroups, FileText }) {
   const Icon = navGroups.flatMap((g) => g.items).find((i) => i.id === id)?.icon || FileText;
   return (
     <div
-      className="rounded-2xl p-10 sm:p-16 flex flex-col items-center justify-center text-center"
-      style={{ background: C.card, border: `1px dashed ${C.border}`, minHeight: 360 }}
+      className="os-surface p-10 sm:p-16 flex flex-col items-center justify-center text-center"
+      style={{ background: C.card, border: `1px dashed ${C.border}`, minHeight: 360, borderRadius: RADIUS.md }}
     >
       <span
-        className="flex items-center justify-center rounded-2xl mb-4"
-        style={{ width: 52, height: 52, background: C.tint, color: C.ink }}
+        className="flex items-center justify-center mb-4"
+        style={{ width: 52, height: 52, background: C.tint, color: C.ink, borderRadius: RADIUS.md }}
       >
-        <Icon size={24} strokeWidth={1.6} aria-hidden="true" />
+        <Icon size={24} strokeWidth={ICON_STROKE} aria-hidden="true" />
       </span>
-      <h3 className="text-lg font-semibold mb-1" style={{ color: C.ink, fontFamily: FONT_HEAD }}>
+      <h3 className="text-lg mb-1" style={{ color: C.ink, fontFamily: FONT_HEAD, fontWeight: 600 }}>
         {meta.title}
       </h3>
-      <p className="text-sm max-w-sm" style={{ color: C.inkSoft }}>
+      <p className="text-sm max-w-sm" style={{ color: C.inkSoft, fontFamily: FONT_BODY }}>
         هذا القسم جاهز للتصميم — سيُربط لاحقاً ببيانات {meta.title}.
       </p>
       <BrandLogo

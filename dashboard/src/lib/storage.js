@@ -1,11 +1,9 @@
-const API_BASE = import.meta.env.VITE_ODAY_API || '/api/oday';
-const TOKEN = import.meta.env.VITE_ODAY_TOKEN || 'oday-office-sync';
-const META_PREFIX = '__oday_meta:';
+import { api } from './api/client';
 
+const META_PREFIX = '__oday_meta:';
 const memory = new Map();
 const listeners = new Set();
-
-let status = TOKEN ? 'syncing' : 'offline';
+let status = 'syncing';
 let hydrating = null;
 
 function canUseLocalStorage() {
@@ -36,26 +34,6 @@ export function onSyncStatus(listener) {
   return () => listeners.delete(listener);
 }
 
-function headers() {
-  return {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-    'X-ODAY-TOKEN': TOKEN,
-    'X-Requested-With': 'XMLHttpRequest',
-  };
-}
-
-async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { ...headers(), ...(options.headers || {}) },
-  });
-  if (!response.ok) {
-    throw new Error(`sync ${response.status}`);
-  }
-  return response.json();
-}
-
 function metaKey(key) {
   return `${META_PREFIX}${key}`;
 }
@@ -84,7 +62,7 @@ function readLocal(key) {
 }
 
 async function flushDirty() {
-  if (!persistent || !TOKEN) return;
+  if (!persistent) return;
   const keys = [];
   for (let i = 0; i < window.localStorage.length; i += 1) {
     const storageKey = window.localStorage.key(i);
@@ -96,26 +74,21 @@ async function flushDirty() {
     const meta = readMeta(key);
     const value = readLocal(key);
     if (!meta.dirty || value == null) return;
-    await api(`/items/${encodeURIComponent(key)}`, {
+    await api(`/api/oday/mobile/items/${encodeURIComponent(key)}`, {
       method: 'PUT',
-      body: JSON.stringify({ value, updated_at: meta.updated_at || Date.now() }),
+      body: { value, updated_at: meta.updated_at || Date.now() },
     });
     writeLocal(key, value, meta.updated_at || Date.now(), false);
   }));
 }
 
 export async function syncFromServer() {
-  if (!TOKEN) {
-    emit('offline');
-    return;
-  }
   if (hydrating) return hydrating;
-
   hydrating = (async () => {
     try {
       emit('syncing');
       await flushDirty();
-      const payload = await api('/items');
+      const payload = await api('/api/oday/mobile/items');
       const items = payload.items || {};
       Object.entries(items).forEach(([key, row]) => {
         const meta = readMeta(key);
@@ -132,7 +105,6 @@ export async function syncFromServer() {
       hydrating = null;
     }
   })();
-
   return hydrating;
 }
 
@@ -144,20 +116,17 @@ export async function getItem(key) {
 export async function setItem(key, value) {
   const updatedAt = Date.now();
   writeLocal(key, value, updatedAt, true);
-  if (!TOKEN) {
-    emit('offline');
-    return;
-  }
   emit('syncing');
   try {
-    await api(`/items/${encodeURIComponent(key)}`, {
+    await api(`/api/oday/mobile/items/${encodeURIComponent(key)}`, {
       method: 'PUT',
-      body: JSON.stringify({ value, updated_at: updatedAt }),
+      body: { value, updated_at: updatedAt },
     });
     writeLocal(key, value, updatedAt, false);
     emit('synced');
   } catch {
     emit('offline');
+    throw new Error('تعذر حفظ البيانات على الخادم');
   }
 }
 

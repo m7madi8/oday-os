@@ -1,9 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Menu, X } from 'lucide-react';
-import { C, FONT_HEAD, cardShadow } from '../theme';
+import { ChevronDown, Menu, MoreHorizontal, X } from 'lucide-react';
+import { C, FONT_HEAD, FONT_SERIF, RADIUS } from '../theme';
 import { BrandLogo } from './BrandLogo';
 import { BRAND } from '../brand';
-import { FINANCE_PAGE_IDS } from '../lib/navigation';
+import { FINANCE_PAGE_IDS, mobileTabItems } from '../lib/navigation';
+
+const ICON_STROKE = 1.5;
+
+function sectionLabelStyle() {
+  return {
+    fontSize: '1rem',
+    fontWeight: 600,
+    letterSpacing: '0.02em',
+    color: 'var(--warm-300)',
+    textTransform: 'none',
+  };
+}
 
 function CollapsibleNavSection({
   group,
@@ -13,6 +25,7 @@ function CollapsibleNavSection({
   active,
   onNavigate,
   financeActive,
+  full = false,
 }) {
   const count = group.items.length;
   const panelOpen = isExpanded || isClosing;
@@ -42,12 +55,18 @@ function CollapsibleNavSection({
         type="button"
         onClick={onToggle}
         aria-expanded={isExpanded}
-        className="w-full flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 min-h-10 block md:hidden lg:flex"
-        style={{ color: financeActive ? C.sidebarTitle : C.sidebarTextFaint }}
+        className={`no-drag w-full flex items-center justify-between gap-2 px-2.5 py-1.5 min-h-10 ${
+          full ? 'flex' : 'flex md:hidden lg:flex'
+        }`}
+        style={{
+          ...sectionLabelStyle(),
+          color: financeActive ? 'var(--paper-50)' : 'var(--warm-500)',
+        }}
       >
-        <span className="text-xs font-medium">{group.title}</span>
+        <span>{group.title}</span>
         <ChevronDown
-          size={14}
+          size={18}
+          strokeWidth={ICON_STROKE}
           aria-hidden="true"
           className={`nav-collapse-chevron shrink-0 ${isExpanded && !isClosing ? 'is-open' : ''}`}
         />
@@ -55,7 +74,7 @@ function CollapsibleNavSection({
 
       {panelOpen ? (
         <div
-          className={`nav-collapse block md:hidden lg:block ${animateIn ? 'is-open' : ''} ${isClosing ? 'is-closing' : ''}`}
+          className={`nav-collapse ${full ? 'block' : 'block md:hidden lg:block'} ${animateIn ? 'is-open' : ''} ${isClosing ? 'is-closing' : ''}`}
           style={{ '--nav-count': count }}
         >
           <div className="nav-collapse-inner">
@@ -71,6 +90,7 @@ function CollapsibleNavSection({
                     isActive={active === item.id}
                     onNavigate={onNavigate}
                     nested
+                    full={full}
                   />
                 </div>
               ))}
@@ -79,23 +99,26 @@ function CollapsibleNavSection({
         </div>
       ) : null}
 
-      <div className="hidden md:flex lg:hidden flex-col gap-0.5">
-        {group.items.map((item) => (
-          <NavItem
-            key={item.id}
-            item={item}
-            isActive={active === item.id}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </div>
+      {full ? null : (
+        <div className="hidden md:flex lg:hidden flex-col gap-0.5">
+          {group.items.map((item) => (
+            <NavItem
+              key={item.id}
+              item={item}
+              isActive={active === item.id}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      )}
     </>
   );
 }
 
-function NavItem({ item, isActive, onNavigate, nested = false }) {
+function NavItem({ item, isActive, onNavigate, nested = false, full = false }) {
   const Icon = item.icon;
-  const isAccent = Boolean(item.accent);
+  const labelClass = full ? 'inline' : 'inline md:hidden lg:inline';
+  const iconClass = full ? 'shrink-0' : 'shrink-0 mx-0 md:mx-auto lg:mx-0';
 
   return (
     <button
@@ -103,49 +126,24 @@ function NavItem({ item, isActive, onNavigate, nested = false }) {
       onClick={() => onNavigate(item.id)}
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
-      className={`w-full flex items-center gap-2.5 rounded-lg py-2 transition-colors min-h-11 md:min-h-10 ${
-        nested ? 'pr-4 lg:pr-6 pl-2.5' : 'px-2.5'
+      className={`no-drag relative w-full flex items-center gap-2.5 py-2 min-h-11 transition-colors ${
+        nested ? 'ps-6 pe-2.5' : 'px-2.5'
       }`}
       style={{
-        background: isActive
-          ? isAccent
-            ? 'linear-gradient(135deg, rgba(167,139,250,0.18) 0%, rgba(99,102,241,0.12) 100%)'
-            : C.sidebarSoft
-          : 'transparent',
-        color: isActive ? C.sidebarTitle : C.sidebarText,
-        position: 'relative',
+        background: 'transparent',
+        color: isActive ? 'var(--paper-50)' : 'var(--warm-300)',
+        borderRadius: RADIUS.sm,
       }}
     >
-      {isActive && (
+      {isActive ? (
         <span
-          className="hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            width: 3,
-            height: 14,
-            background: isAccent
-              ? 'linear-gradient(180deg, #a78bfa 0%, #6366f1 100%)'
-              : C.bronze1,
-          }}
+          aria-hidden="true"
+          className="absolute inset-y-2 start-0 w-px"
+          style={{ background: 'var(--gold-500)' }}
         />
-      )}
-      {isAccent ? (
-        <span
-          className="flex items-center justify-center rounded-lg shrink-0 mx-0 md:mx-auto lg:mx-0"
-          style={{
-            width: 28,
-            height: 28,
-            background: isActive
-              ? 'linear-gradient(135deg, #a78bfa 0%, #6366f1 55%, #38bdf8 100%)'
-              : 'linear-gradient(135deg, rgba(167,139,250,0.35) 0%, rgba(99,102,241,0.28) 100%)',
-            boxShadow: isActive ? '0 4px 14px -4px rgba(99,102,241,0.55)' : 'none',
-          }}
-        >
-          <Icon size={14} strokeWidth={2} color="#fff" aria-hidden="true" />
-        </span>
-      ) : (
-        <Icon size={16} strokeWidth={1.7} className="shrink-0 mx-0 md:mx-auto lg:mx-0" aria-hidden="true" />
-      )}
-      <span className="inline md:hidden lg:inline text-sm">{item.label}</span>
+      ) : null}
+      <Icon size={20} strokeWidth={ICON_STROKE} className={iconClass} aria-hidden="true" />
+      <span className={`${labelClass} text-base`}>{item.label}</span>
     </button>
   );
 }
@@ -157,10 +155,12 @@ export function Sidebar({
   sidebarDark = true,
   menuOpen = false,
   onCloseMenu,
+  userLabel = 'مدير النظام',
+  desktop = false,
 }) {
   const touchStartX = useRef(null);
   const closeTimer = useRef(null);
-  const [expanded, setExpanded] = useState({ المالية: FINANCE_PAGE_IDS.includes(active) });
+  const [expanded, setExpanded] = useState({ المالية: true });
   const [closing, setClosing] = useState({ المالية: false });
 
   useEffect(() => {
@@ -199,79 +199,90 @@ export function Sidebar({
     setExpanded((prev) => ({ ...prev, [title]: true }));
   }
 
+  const asideClass = desktop
+    ? 'print-hide no-drag app-sidebar pointer-events-auto'
+    : `print-hide no-drag app-sidebar ${menuOpen ? 'is-open' : ''}`;
+
   return (
     <>
-      <div
-        className={`print-hide fixed inset-0 z-40 md:hidden ${menuOpen ? 'block' : 'hidden'}`}
-        style={{ background: 'rgba(0,0,0,0.45)' }}
-        onClick={onCloseMenu}
-        aria-hidden="true"
-      />
+      {desktop ? null : (
+        <div
+          className={`print-hide fixed inset-0 z-40 md:hidden ${menuOpen ? 'block' : 'hidden'}`}
+          style={{ background: 'rgba(10,10,10,0.45)' }}
+          onClick={onCloseMenu}
+          aria-hidden="true"
+        />
+      )}
 
       <aside
         id="app-sidebar"
-        className={`print-hide fixed inset-y-0 right-0 z-50 w-72 flex flex-col overflow-hidden transform transition-transform duration-200 ease-out motion-reduce:transition-none md:static md:z-auto md:w-16 md:translate-x-0 md:shrink-0 md:h-full lg:w-64 ${
-          menuOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none md:pointer-events-auto'
-        }`}
-        style={{ background: C.sidebar, borderLeft: `1px solid ${C.sidebarLine}` }}
-        role={menuOpen ? 'dialog' : undefined}
-        aria-modal={menuOpen ? true : undefined}
+        className={asideClass}
+        style={{ background: 'var(--black-950)' }}
+        data-on-dark={sidebarDark ? 'true' : 'false'}
+        role={!desktop && menuOpen ? 'dialog' : undefined}
+        aria-modal={!desktop && menuOpen ? true : undefined}
         aria-label="القائمة"
         onTouchStart={(event) => {
+          if (desktop) return;
           touchStartX.current = event.touches[0]?.clientX ?? null;
         }}
         onTouchEnd={(event) => {
-          if (touchStartX.current == null) return;
+          if (desktop || touchStartX.current == null) return;
           const dx = event.changedTouches[0].clientX - touchStartX.current;
           touchStartX.current = null;
-          if (dx > 48) onCloseMenu?.();
+          const rtl = document.dir === 'rtl' || document.documentElement.dir === 'rtl';
+          if ((rtl && dx > 48) || (!rtl && dx < -48)) onCloseMenu?.();
         }}
       >
-        <div className="flex flex-col items-start md:items-center lg:items-start px-5 md:px-2.5 lg:px-5 pt-4 pb-3 shrink-0">
-          <div className="flex w-full items-center justify-between md:justify-center lg:justify-between">
+        <div className={`flex flex-col items-start px-5 pt-4 pb-3 shrink-0 ${desktop ? '' : 'md:items-center lg:items-start md:px-2.5 lg:px-5'}`}>
+          <div className={`flex w-full items-center justify-between ${desktop ? '' : 'md:justify-center lg:justify-between'}`}>
             <div aria-label={BRAND.product}>
-              <BrandLogo
-                variant="mark"
-                onDark={sidebarDark}
-                decorative
-                className="hidden md:block lg:hidden shrink-0"
-                style={{ width: 28, height: 'auto' }}
-              />
+              {desktop ? null : (
+                <BrandLogo
+                  variant="mark"
+                  onDark
+                  decorative
+                  className="hidden md:block lg:hidden shrink-0"
+                  style={{ width: 28, height: 'auto' }}
+                />
+              )}
               <BrandLogo
                 variant="lockup"
-                onDark={sidebarDark}
+                onDark
                 decorative
-                className="block md:hidden lg:block shrink-0"
+                className={desktop ? 'block shrink-0' : 'block md:hidden lg:block shrink-0'}
                 style={{ width: 78, height: 'auto' }}
               />
             </div>
-            <button
-              type="button"
-              className="md:hidden flex items-center justify-center rounded-xl min-h-11 min-w-11 shrink-0"
-              style={{ color: C.sidebarTitle }}
-              onClick={onCloseMenu}
-              aria-label="إغلاق القائمة"
-            >
-              <X size={20} strokeWidth={1.8} aria-hidden="true" />
-            </button>
+            {desktop ? null : (
+              <button
+                type="button"
+                className="no-drag md:hidden flex items-center justify-center min-h-11 min-w-11 shrink-0"
+                style={{ color: 'var(--paper-50)', borderRadius: RADIUS.md }}
+                onClick={onCloseMenu}
+                aria-label="إغلاق القائمة"
+              >
+                <X size={20} strokeWidth={ICON_STROKE} aria-hidden="true" />
+              </button>
+            )}
           </div>
-          <div className="block md:hidden lg:block leading-tight mt-2">
+          <div className={desktop ? 'block leading-tight mt-2' : 'block md:hidden lg:block leading-tight mt-2'}>
             <div
-              className="text-sm font-semibold tracking-[0.14em]"
-              style={{ color: C.sidebarTitle, fontFamily: FONT_HEAD }}
+              className="text-base tracking-[0.08em]"
+              style={{ color: 'var(--paper-50)', fontFamily: FONT_SERIF, fontWeight: 600 }}
               dir="ltr"
             >
               {BRAND.product}
             </div>
           </div>
           <div
-            className="w-full mt-3 block md:hidden lg:block"
-            style={{ height: 1, background: `linear-gradient(90deg, ${C.bronzeLine}, transparent)` }}
+            className={desktop ? 'w-full mt-3 block' : 'w-full mt-3 block md:hidden lg:block'}
+            style={{ height: 1, background: 'var(--line-800)' }}
           />
         </div>
 
         <nav
-          className="flex-1 min-h-0 px-3 md:px-1.5 lg:px-3 pt-1 pb-2 space-y-3 overflow-y-auto overflow-x-hidden"
+          className={`app-sidebar-scroll no-drag flex-1 min-h-0 px-3 pt-1 pb-2 space-y-3 overflow-y-auto overflow-x-hidden ${desktop ? '' : 'md:px-1.5 lg:px-3'}`}
           aria-label="القائمة الرئيسية"
         >
           {navGroups.map((group) => {
@@ -291,12 +302,13 @@ export function Sidebar({
                     active={active}
                     onNavigate={handleNavigate}
                     financeActive={financeActive}
+                    full={desktop}
                   />
                 ) : (
                   <>
                     <div
-                      className="block md:hidden lg:block text-xs px-2.5 mb-1 font-medium"
-                      style={{ color: C.sidebarTextFaint }}
+                      className={desktop ? 'block px-2.5 mb-1' : 'block md:hidden lg:block px-2.5 mb-1'}
+                      style={sectionLabelStyle()}
                     >
                       {group.title}
                     </div>
@@ -307,6 +319,7 @@ export function Sidebar({
                           item={item}
                           isActive={active === item.id}
                           onNavigate={handleNavigate}
+                          full={desktop}
                         />
                       ))}
                     </div>
@@ -318,22 +331,71 @@ export function Sidebar({
         </nav>
 
         <div
-          className="px-5 py-4 block md:hidden lg:block shrink-0"
-          style={{ borderTop: `1px solid ${C.sidebarLine}` }}
+          className={desktop ? 'px-5 py-4 block shrink-0' : 'px-5 py-4 block md:hidden lg:block shrink-0'}
+          style={{ borderTop: '1px solid var(--line-800)' }}
         >
           <div
-            className="text-xs font-medium leading-snug"
-            style={{ color: C.sidebarTitle }}
+            className="leading-snug"
+            style={{ color: 'var(--paper-50)', fontSize: '1.0625rem', fontWeight: 500 }}
             dir="ltr"
           >
             {BRAND.firm}
           </div>
-          <div className="text-[11px] mt-1" style={{ color: C.sidebarTextFaint }}>
-            مدير النظام
+          <div className="mt-1" style={{ color: 'var(--warm-300)', fontSize: '1rem' }}>
+            {userLabel}
           </div>
         </div>
       </aside>
     </>
+  );
+}
+
+export function BottomNav({ active, onNavigate, onMore, navGroups }) {
+  const tabs = mobileTabItems(navGroups);
+
+  return (
+    <nav className="os-tabbar-wrap print-hide" aria-label="التنقل السفلي">
+      <div className="os-tabbar">
+        <button
+          type="button"
+          onClick={onMore}
+          className="os-tab no-drag"
+          aria-label="المزيد"
+        >
+          <MoreHorizontal size={18} strokeWidth={1.8} aria-hidden="true" />
+          المزيد
+        </button>
+        {tabs.map((item) => {
+          const Icon = item.icon;
+          const isActive = active === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate(item.id)}
+              aria-current={isActive ? 'page' : undefined}
+              className={`os-tab no-drag ${isActive ? 'is-active' : ''}`}
+            >
+              <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+export function DesktopTitleBar() {
+  return (
+    <div
+      className="app-drag print-hide shrink-0"
+      style={{
+        height: 'env(titlebar-area-height, 40px)',
+        background: 'var(--black-950)',
+      }}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -353,53 +415,63 @@ export function TopBar({
   yearRef,
   menuOpen = false,
   onToggleMenu,
+  desktop = false,
 }) {
   const meta = pageMeta[page] || { title: page };
 
   return (
-    <div
-      className="print-hide sticky top-0 z-30 md:static flex flex-nowrap items-center lg:items-start justify-between gap-2 sm:gap-4 mb-4 sm:mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 py-3 sm:py-0"
-      style={{ background: C.paper }}
-    >
-      <button
-        type="button"
-        className="md:hidden flex items-center justify-center rounded-xl min-h-11 min-w-11 shrink-0"
-        style={{ background: C.card, border: `1px solid ${C.border}`, color: C.ink, boxShadow: cardShadow }}
-        onClick={onToggleMenu}
-        aria-label={menuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-        aria-expanded={menuOpen}
-        aria-controls="app-sidebar"
-      >
-        {menuOpen ? <X size={18} strokeWidth={1.8} aria-hidden="true" /> : <Menu size={18} strokeWidth={1.8} aria-hidden="true" />}
-      </button>
+    <div className="print-hide app-topbar">
+      {desktop ? null : (
+        <button
+          type="button"
+          className="os-icon-btn no-drag app-topbar-menu md:hidden"
+          onClick={onToggleMenu}
+          aria-label={menuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+          aria-expanded={menuOpen}
+          aria-controls="app-sidebar"
+        >
+          {menuOpen ? <X size={18} strokeWidth={1.8} aria-hidden="true" /> : <Menu size={18} strokeWidth={1.8} aria-hidden="true" />}
+        </button>
+      )}
 
-      <div className="min-w-0 flex-1 overflow-hidden">
-        <h1 className="text-xl sm:text-3xl font-bold truncate" style={{ color: C.ink, fontFamily: FONT_HEAD }}>
+      <div className="app-topbar-heading min-w-0 overflow-hidden">
+        <h1 className="app-page-title text-2xl sm:text-3xl truncate" style={{ color: C.ink, fontFamily: FONT_HEAD, fontWeight: 600 }}>
           {meta.title}
         </h1>
         {meta.subtitle ? (
-          <p className="text-xs sm:text-sm mt-1 truncate" style={{ color: C.inkSoft }}>{meta.subtitle}</p>
+          <p className="app-topbar-sub text-base mt-1 truncate" style={{ color: C.inkSoft }}>{meta.subtitle}</p>
         ) : null}
       </div>
 
-      <div className="flex flex-nowrap items-center gap-2 shrink-0">
+      <div className="app-topbar-controls no-drag flex flex-nowrap items-center gap-2 shrink-0">
         <div className="relative" ref={yearRef}>
           <button
             type="button"
             onClick={() => setYearOpen((v) => !v)}
             aria-expanded={yearOpen}
             aria-haspopup="listbox"
-            className="flex items-center gap-2 rounded-xl px-3 sm:px-4 py-2 text-sm font-medium min-h-11"
-            style={{ background: C.card, border: `1px solid ${C.border}`, color: C.ink, boxShadow: cardShadow }}
+            className="os-year-pill flex items-center gap-2 px-3 sm:px-4 py-2 text-base min-h-11"
+            style={{
+              background: C.card,
+              border: `1px solid ${C.border}`,
+              color: C.ink,
+              borderRadius: RADIUS.md,
+              fontFamily: FONT_SERIF,
+            }}
           >
             <span className="tabular-nums">{year}</span>
-            <ChevronDown size={15} aria-hidden="true" style={{ transform: yearOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+            <ChevronDown size={13} strokeWidth={2} aria-hidden="true" style={{ transform: yearOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
           </button>
           {yearOpen && (
             <div
               role="listbox"
-              className="absolute left-0 mt-1 rounded-xl overflow-hidden z-20"
-              style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: cardShadow, minWidth: 110 }}
+              className="absolute end-0 mt-1 overflow-hidden z-20"
+              style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                minWidth: 110,
+                borderRadius: RADIUS.md,
+              }}
             >
               {years.map((y) => (
                 <button
@@ -408,7 +480,7 @@ export function TopBar({
                   role="option"
                   aria-selected={y === year}
                   onClick={() => { setYear(y); setYearOpen(false); }}
-                  className="w-full text-right px-4 py-2 text-sm tabular-nums min-h-11"
+                  className="w-full text-start px-4 py-2 text-sm tabular-nums min-h-11"
                   style={{ background: y === year ? C.tint : 'transparent', color: C.ink }}
                 >
                   {y}
@@ -423,11 +495,16 @@ export function TopBar({
           onClick={() => setHidden((v) => !v)}
           aria-pressed={hidden}
           aria-label={hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
-          className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium min-h-11"
-          style={{ background: hidden ? C.sidebar : C.card, border: `1px solid ${hidden ? C.sidebar : C.border}`, color: hidden ? C.sidebarTitle : C.ink, boxShadow: cardShadow }}
+          className="os-icon-btn os-eye-btn flex items-center gap-2 px-3 py-2 text-sm min-h-11"
+          style={{
+            background: hidden ? 'var(--black-950)' : C.card,
+            border: `1px solid ${hidden ? 'var(--black-950)' : C.border}`,
+            color: hidden ? 'var(--paper-50)' : C.ink,
+            borderRadius: RADIUS.md,
+          }}
         >
-          {hidden ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-          <span className="hidden sm:inline">{hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}</span>
+          {hidden ? <EyeOff size={17} strokeWidth={1.8} aria-hidden="true" /> : <Eye size={17} strokeWidth={1.8} aria-hidden="true" />}
+          <span className="os-eye-label hidden sm:inline">{hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}</span>
         </button>
       </div>
     </div>
