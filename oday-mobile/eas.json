@@ -12,7 +12,8 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "development"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -22,7 +23,8 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "http://192.168.1.13:8000",
         "EXPO_PUBLIC_APP_ENV": "preview"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "android": {
@@ -30,7 +32,8 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

@@ -16,6 +16,7 @@ import {
 } from '@expo-google-fonts/ibm-plex-sans-arabic';
 import { Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
 import { AppProviders } from '@/lib/auth/AuthProvider';
+import { UpdateListener } from '@/components/UpdateListener';
 import { C } from '@/theme';
 
 export {
@@ -51,6 +52,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppProviders>
+        <UpdateListener />
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.paper } }}>
           <Stack.Screen name="(auth)" options={{ contentStyle: { backgroundColor: C.sidebar } }} />

@@ -40,6 +40,7 @@ export const FONT_SERIF = "'Fraunces', Georgia, serif";
 export const FONT_HEAD = "'Noto Sans Arabic', sans-serif";
 export const FONT_BODY = "'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif";
 export const FONT_LATIN = "'IBM Plex Sans', system-ui, sans-serif";
+export const FONT_MONO = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
 
 export const RADIUS = { sm: 4, md: 8, pill: 999 };
 

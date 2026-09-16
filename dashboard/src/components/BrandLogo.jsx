@@ -35,3 +35,15 @@ export function BrandLogo({
     />
   );
 }
+
+export function BrandStamp({ className = '', onDarkSurface = false }) {
+  return (
+    <span
+      className={`os-brand-stamp ${onDarkSurface ? 'is-on-dark' : ''} ${className}`.trim()}
+      aria-hidden="true"
+    >
+      <span className="os-brand-stamp__grid" />
+      <BrandLogo variant="mark" onDark decorative className="os-brand-stamp__mark" />
+    </span>
+  );
+}

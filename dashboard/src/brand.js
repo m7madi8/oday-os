@@ -4,6 +4,7 @@ export const BRAND = {
   ownerEn: 'Oday Abu Doha',
   firm: 'Oday Abu Doha Architects',
   firmAr: 'عدي أبو ضحى',
+  firmArFull: 'مكتب عدي أبو ضحى للهندسة المعمارية',
   product: 'ODAY OS',
   productShort: 'ODAY OS',
   productDescription: 'نظام إدارة مكتب عدي أبو ضحى المعماري',

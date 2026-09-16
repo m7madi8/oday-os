@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { C, FONT_BODY, PAGE_META, YEARS, getPalette } from './theme';
 import { NAV_GROUPS } from './lib/navigation';
 import { BrandLogo } from './components/BrandLogo';
@@ -40,13 +39,11 @@ export default function App() {
   const [year, setYear] = useState(2026);
   const [hidden, setHidden] = useState(false);
   const [ready, setReady] = useState(false);
-  const [yearOpen, setYearOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [office, setOffice] = useState(DEFAULT_OFFICE_SETTINGS);
   const [officeReady, setOfficeReady] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [dataEpoch, setDataEpoch] = useState(0);
-  const yearRef = useRef(null);
   const saveTimer = useRef(null);
   const skipOfficeSave = useRef(true);
   const navGroups = useMemo(() => filterNavGroups(NAV_GROUPS, session?.user), [session]);
@@ -128,14 +125,8 @@ export default function App() {
   }, [office, officeReady, session]);
 
   useEffect(() => {
-    function onPointerDown(event) {
-      if (yearRef.current && !yearRef.current.contains(event.target)) {
-        setYearOpen(false);
-      }
-    }
     function onKeyDown(event) {
       if (event.key === 'Escape') {
-        setYearOpen(false);
         setMenuOpen(false);
       }
       if ((event.ctrlKey || event.metaKey) && event.key === ',') {
@@ -154,11 +145,9 @@ export default function App() {
     function onResize() {
       if (window.innerWidth >= 768) setMenuOpen(false);
     }
-    document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
     window.addEventListener('resize', onResize);
     return () => {
-      document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('resize', onResize);
     };
@@ -237,26 +226,22 @@ export default function App() {
             className="absolute pointer-events-none select-none print-hide phone-hide"
             style={{ width: 380, height: 'auto', left: -48, bottom: -28, opacity: 0.045 }}
           />
+          <TopBar
+            page={page}
+            year={year}
+            setYear={setYear}
+            hidden={hidden}
+            setHidden={setHidden}
+            pageMeta={PAGE_META}
+            years={YEARS}
+            menuOpen={menuOpen}
+            onToggleMenu={() => setMenuOpen((open) => !open)}
+            desktop={desktop}
+            onNavigate={setPage}
+            navGroups={navGroups}
+          />
           <div className="app-scroll" data-app-scroll>
             <div className="app-content">
-              <TopBar
-                page={page}
-                year={year}
-                setYear={setYear}
-                hidden={hidden}
-                setHidden={setHidden}
-                pageMeta={PAGE_META}
-                years={YEARS}
-                Eye={Eye}
-                EyeOff={EyeOff}
-                ChevronDown={ChevronDown}
-                yearOpen={yearOpen}
-                setYearOpen={setYearOpen}
-                yearRef={yearRef}
-                menuOpen={menuOpen}
-                onToggleMenu={() => setMenuOpen((open) => !open)}
-                desktop={desktop}
-              />
               <OfflineBanner />
               {page === 'dashboard' ? (
                 <Dashboard key={dataEpoch} year={year} hidden={hidden} onNavigate={setPage} />

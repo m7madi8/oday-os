@@ -63,8 +63,9 @@
       "expo-sharing",
       "expo-localization",
       "expo-font",
-      "expo-image"
-    ],
+    "expo-image",
+    "expo-updates"
+  ],
     "experiments": {
       "typedRoutes": true
     },
@@ -75,6 +76,12 @@
         "projectId": "7fee98e8-cfdc-49cc-8b8e-9ef6d9cd6af7"
       }
     },
-    "owner": "m7madi8"
+    "owner": "m7madi8",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7fee98e8-cfdc-49cc-8b8e-9ef6d9cd6af7"
+    }
   }
 }
