@@ -1,3 +1,5 @@
+import { ODAY_PALETTE } from '../../oday-theme/tokens.js';
+
 const v = (name) => `var(--c-${name})`;
 
 export const C = {
@@ -18,6 +20,8 @@ export const C = {
   bronze1: v('bronze1'),
   bronze2: v('bronze2'),
   bronzeLine: v('bronzeLine'),
+  lime: v('bronze1'),
+  limeDeep: v('bronze2'),
 
   burgundy: v('burgundy'),
   burgundySoft: v('burgundySoft'),
@@ -34,7 +38,7 @@ export const C = {
 
 export const FONT_SERIF = "'Fraunces', Georgia, serif";
 export const FONT_HEAD = "'Noto Sans Arabic', sans-serif";
-export const FONT_BODY = "'Noto Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif";
+export const FONT_BODY = "'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif";
 export const FONT_LATIN = "'IBM Plex Sans', system-ui, sans-serif";
 
 export const RADIUS = { sm: 4, md: 8, pill: 999 };
@@ -84,38 +88,7 @@ const COLOR_KEYS = [
 ];
 
 export const PALETTES = [
-  {
-    id: 'graphite-brass',
-    name: 'Atelier Ink',
-    swatches: ['#0A0A0A', '#BB9660', '#948C78', '#F6F4EE'],
-    sidebarDark: true,
-    colors: {
-      paper: '#F6F4EE',
-      dot: '#E4DFD4',
-      ink: '#0A0A0A',
-      inkSoft: '#948C78',
-      inkFaint: '#948C78',
-      tint: '#EFECE4',
-      sidebar: '#0A0A0A',
-      sidebarSoft: '#111110',
-      sidebarLine: '#2A2825',
-      sidebarText: '#C8C2B3',
-      sidebarTextFaint: '#948C78',
-      sidebarTitle: '#F6F4EE',
-      bronze1: '#BB9660',
-      bronze2: '#9C7A48',
-      bronzeLine: '#2A2825',
-      burgundy: '#C1573D',
-      burgundySoft: '#EFECE4',
-      burgundyLine: '#C1573D',
-      emerald: '#5C9270',
-      emeraldSoft: '#EFECE4',
-      emeraldLine: '#5C9270',
-      border: '#E4DFD4',
-      card: '#F6F4EE',
-      focus: '#BB9660',
-    },
-  },
+  ODAY_PALETTE,
   {
     id: 'navy-blueprint',
     name: 'Navy Blueprint',

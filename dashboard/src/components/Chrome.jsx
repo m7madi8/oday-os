@@ -12,7 +12,7 @@ function sectionLabelStyle() {
     fontSize: '1rem',
     fontWeight: 600,
     letterSpacing: '0.02em',
-    color: 'var(--warm-300)',
+    color: C.sidebarText,
     textTransform: 'none',
   };
 }
@@ -60,7 +60,7 @@ function CollapsibleNavSection({
         }`}
         style={{
           ...sectionLabelStyle(),
-          color: financeActive ? 'var(--paper-50)' : 'var(--warm-500)',
+          color: financeActive ? C.sidebarTitle : C.sidebarTextFaint,
         }}
       >
         <span>{group.title}</span>
@@ -131,7 +131,7 @@ function NavItem({ item, isActive, onNavigate, nested = false, full = false }) {
       }`}
       style={{
         background: 'transparent',
-        color: isActive ? 'var(--paper-50)' : 'var(--warm-300)',
+        color: isActive ? C.sidebarTitle : C.sidebarText,
         borderRadius: RADIUS.sm,
       }}
     >
@@ -139,7 +139,7 @@ function NavItem({ item, isActive, onNavigate, nested = false, full = false }) {
         <span
           aria-hidden="true"
           className="absolute inset-y-2 start-0 w-px"
-          style={{ background: 'var(--gold-500)' }}
+          style={{ background: C.lime }}
         />
       ) : null}
       <Icon size={20} strokeWidth={ICON_STROKE} className={iconClass} aria-hidden="true" />
@@ -160,7 +160,7 @@ export function Sidebar({
 }) {
   const touchStartX = useRef(null);
   const closeTimer = useRef(null);
-  const [expanded, setExpanded] = useState({ المالية: true });
+  const [expanded, setExpanded] = useState({ المالية: false });
   const [closing, setClosing] = useState({ المالية: false });
 
   useEffect(() => {
@@ -208,7 +208,7 @@ export function Sidebar({
       {desktop ? null : (
         <div
           className={`print-hide fixed inset-0 z-40 md:hidden ${menuOpen ? 'block' : 'hidden'}`}
-          style={{ background: 'rgba(10,10,10,0.45)' }}
+          style={{ background: 'color-mix(in srgb, var(--c-ink) 45%, transparent)' }}
           onClick={onCloseMenu}
           aria-hidden="true"
         />
@@ -217,7 +217,7 @@ export function Sidebar({
       <aside
         id="app-sidebar"
         className={asideClass}
-        style={{ background: 'var(--black-950)' }}
+        style={{ background: C.sidebar }}
         data-on-dark={sidebarDark ? 'true' : 'false'}
         role={!desktop && menuOpen ? 'dialog' : undefined}
         aria-modal={!desktop && menuOpen ? true : undefined}
@@ -230,8 +230,7 @@ export function Sidebar({
           if (desktop || touchStartX.current == null) return;
           const dx = event.changedTouches[0].clientX - touchStartX.current;
           touchStartX.current = null;
-          const rtl = document.dir === 'rtl' || document.documentElement.dir === 'rtl';
-          if ((rtl && dx > 48) || (!rtl && dx < -48)) onCloseMenu?.();
+          if (dx < -48) onCloseMenu?.();
         }}
       >
         <div className={`flex flex-col items-start px-5 pt-4 pb-3 shrink-0 ${desktop ? '' : 'md:items-center lg:items-start md:px-2.5 lg:px-5'}`}>
@@ -258,7 +257,7 @@ export function Sidebar({
               <button
                 type="button"
                 className="no-drag md:hidden flex items-center justify-center min-h-11 min-w-11 shrink-0"
-                style={{ color: 'var(--paper-50)', borderRadius: RADIUS.md }}
+                style={{ color: C.sidebarTitle, borderRadius: RADIUS.md }}
                 onClick={onCloseMenu}
                 aria-label="إغلاق القائمة"
               >
@@ -269,7 +268,7 @@ export function Sidebar({
           <div className={desktop ? 'block leading-tight mt-2' : 'block md:hidden lg:block leading-tight mt-2'}>
             <div
               className="text-base tracking-[0.08em]"
-              style={{ color: 'var(--paper-50)', fontFamily: FONT_SERIF, fontWeight: 600 }}
+              style={{ color: C.sidebarTitle, fontFamily: FONT_SERIF, fontWeight: 600 }}
               dir="ltr"
             >
               {BRAND.product}
@@ -277,7 +276,7 @@ export function Sidebar({
           </div>
           <div
             className={desktop ? 'w-full mt-3 block' : 'w-full mt-3 block md:hidden lg:block'}
-            style={{ height: 1, background: 'var(--line-800)' }}
+            style={{ height: 1, background: C.sidebarLine }}
           />
         </div>
 
@@ -332,16 +331,16 @@ export function Sidebar({
 
         <div
           className={desktop ? 'px-5 py-4 block shrink-0' : 'px-5 py-4 block md:hidden lg:block shrink-0'}
-          style={{ borderTop: '1px solid var(--line-800)' }}
+          style={{ borderTop: `1px solid ${C.sidebarLine}` }}
         >
           <div
             className="leading-snug"
-            style={{ color: 'var(--paper-50)', fontSize: '1.0625rem', fontWeight: 500 }}
+            style={{ color: C.sidebarTitle, fontSize: '1.0625rem', fontWeight: 500 }}
             dir="ltr"
           >
             {BRAND.firm}
           </div>
-          <div className="mt-1" style={{ color: 'var(--warm-300)', fontSize: '1rem' }}>
+          <div className="mt-1" style={{ color: C.sidebarText, fontSize: '1rem' }}>
             {userLabel}
           </div>
         </div>
@@ -356,15 +355,6 @@ export function BottomNav({ active, onNavigate, onMore, navGroups }) {
   return (
     <nav className="os-tabbar-wrap print-hide" aria-label="التنقل السفلي">
       <div className="os-tabbar">
-        <button
-          type="button"
-          onClick={onMore}
-          className="os-tab no-drag"
-          aria-label="المزيد"
-        >
-          <MoreHorizontal size={18} strokeWidth={1.8} aria-hidden="true" />
-          المزيد
-        </button>
         {tabs.map((item) => {
           const Icon = item.icon;
           const isActive = active === item.id;
@@ -381,6 +371,15 @@ export function BottomNav({ active, onNavigate, onMore, navGroups }) {
             </button>
           );
         })}
+        <button
+          type="button"
+          onClick={onMore}
+          className="os-tab no-drag"
+          aria-label="المزيد"
+        >
+          <MoreHorizontal size={18} strokeWidth={1.8} aria-hidden="true" />
+          المزيد
+        </button>
       </div>
     </nav>
   );
@@ -392,10 +391,92 @@ export function DesktopTitleBar() {
       className="app-drag print-hide shrink-0"
       style={{
         height: 'env(titlebar-area-height, 40px)',
-        background: 'var(--black-950)',
+        background: C.sidebar,
       }}
       aria-hidden="true"
     />
+  );
+}
+
+function TopBarControls({
+  year,
+  setYear,
+  hidden,
+  setHidden,
+  years,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  yearOpen,
+  setYearOpen,
+  yearRef,
+  compact = false,
+}) {
+  return (
+    <div className={`app-topbar-controls no-drag flex flex-nowrap items-center shrink-0 ${compact ? 'app-topbar-controls--compact' : 'gap-2'}`}>
+      <div className="relative" ref={yearRef}>
+        <button
+          type="button"
+          onClick={() => setYearOpen((v) => !v)}
+          aria-expanded={yearOpen}
+          aria-haspopup="listbox"
+          className="os-year-pill flex items-center gap-2 px-3 sm:px-4 py-2 text-base min-h-11"
+          style={{
+            background: C.card,
+            border: `1px solid ${C.border}`,
+            color: C.ink,
+            borderRadius: RADIUS.md,
+            fontFamily: FONT_SERIF,
+          }}
+        >
+          <span className="tabular-nums">{year}</span>
+          <ChevronDown size={13} strokeWidth={2} aria-hidden="true" style={{ transform: yearOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
+        </button>
+        {yearOpen && (
+          <div
+            role="listbox"
+            className="absolute end-0 mt-1 overflow-hidden z-20"
+            style={{
+              background: C.card,
+              border: `1px solid ${C.border}`,
+              minWidth: 110,
+              borderRadius: RADIUS.md,
+            }}
+          >
+            {years.map((y) => (
+              <button
+                key={y}
+                type="button"
+                role="option"
+                aria-selected={y === year}
+                onClick={() => { setYear(y); setYearOpen(false); }}
+                className="w-full text-start px-4 py-2 text-sm tabular-nums min-h-11"
+                style={{ background: y === year ? C.tint : 'transparent', color: C.ink }}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setHidden((v) => !v)}
+        aria-pressed={hidden}
+        aria-label={hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
+        className="os-icon-btn os-eye-btn flex items-center gap-2 px-3 py-2 text-sm min-h-11"
+        style={{
+          background: hidden ? C.sidebar : C.card,
+          border: `1px solid ${hidden ? C.sidebar : C.border}`,
+          color: hidden ? C.sidebarTitle : C.ink,
+          borderRadius: RADIUS.md,
+        }}
+      >
+        {hidden ? <EyeOff size={17} strokeWidth={1.8} aria-hidden="true" /> : <Eye size={17} strokeWidth={1.8} aria-hidden="true" />}
+        <span className="os-eye-label hidden sm:inline">{hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}</span>
+      </button>
+    </div>
   );
 }
 
@@ -419,21 +500,53 @@ export function TopBar({
 }) {
   const meta = pageMeta[page] || { title: page };
 
+  if (!desktop) {
+    return (
+      <header className="print-hide app-topbar app-topbar--mobile" dir="ltr">
+        <div className="app-topbar__lead">
+          <button
+            type="button"
+            className={`os-icon-btn no-drag app-topbar-menu ${menuOpen ? 'is-active' : ''}`}
+            onClick={onToggleMenu}
+            aria-label={menuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+            aria-expanded={menuOpen}
+            aria-controls="app-sidebar"
+          >
+            {menuOpen ? <X size={19} strokeWidth={2} aria-hidden="true" /> : <Menu size={19} strokeWidth={2} aria-hidden="true" />}
+          </button>
+        </div>
+
+        <div className="app-topbar__center" dir="rtl">
+          <h1 className="app-page-title truncate" style={{ color: C.ink, fontFamily: FONT_HEAD }}>
+            {meta.title}
+          </h1>
+          {meta.subtitle ? (
+            <p className="app-topbar-sub truncate" style={{ color: C.inkSoft }}>{meta.subtitle}</p>
+          ) : null}
+        </div>
+
+        <div className="app-topbar__trail">
+          <TopBarControls
+            year={year}
+            setYear={setYear}
+            hidden={hidden}
+            setHidden={setHidden}
+            years={years}
+            Eye={Eye}
+            EyeOff={EyeOff}
+            ChevronDown={ChevronDown}
+            yearOpen={yearOpen}
+            setYearOpen={setYearOpen}
+            yearRef={yearRef}
+            compact
+          />
+        </div>
+      </header>
+    );
+  }
+
   return (
     <div className="print-hide app-topbar">
-      {desktop ? null : (
-        <button
-          type="button"
-          className="os-icon-btn no-drag app-topbar-menu md:hidden"
-          onClick={onToggleMenu}
-          aria-label={menuOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-          aria-expanded={menuOpen}
-          aria-controls="app-sidebar"
-        >
-          {menuOpen ? <X size={18} strokeWidth={1.8} aria-hidden="true" /> : <Menu size={18} strokeWidth={1.8} aria-hidden="true" />}
-        </button>
-      )}
-
       <div className="app-topbar-heading min-w-0 overflow-hidden">
         <h1 className="app-page-title text-2xl sm:text-3xl truncate" style={{ color: C.ink, fontFamily: FONT_HEAD, fontWeight: 600 }}>
           {meta.title}
@@ -443,70 +556,19 @@ export function TopBar({
         ) : null}
       </div>
 
-      <div className="app-topbar-controls no-drag flex flex-nowrap items-center gap-2 shrink-0">
-        <div className="relative" ref={yearRef}>
-          <button
-            type="button"
-            onClick={() => setYearOpen((v) => !v)}
-            aria-expanded={yearOpen}
-            aria-haspopup="listbox"
-            className="os-year-pill flex items-center gap-2 px-3 sm:px-4 py-2 text-base min-h-11"
-            style={{
-              background: C.card,
-              border: `1px solid ${C.border}`,
-              color: C.ink,
-              borderRadius: RADIUS.md,
-              fontFamily: FONT_SERIF,
-            }}
-          >
-            <span className="tabular-nums">{year}</span>
-            <ChevronDown size={13} strokeWidth={2} aria-hidden="true" style={{ transform: yearOpen ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }} />
-          </button>
-          {yearOpen && (
-            <div
-              role="listbox"
-              className="absolute end-0 mt-1 overflow-hidden z-20"
-              style={{
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                minWidth: 110,
-                borderRadius: RADIUS.md,
-              }}
-            >
-              {years.map((y) => (
-                <button
-                  key={y}
-                  type="button"
-                  role="option"
-                  aria-selected={y === year}
-                  onClick={() => { setYear(y); setYearOpen(false); }}
-                  className="w-full text-start px-4 py-2 text-sm tabular-nums min-h-11"
-                  style={{ background: y === year ? C.tint : 'transparent', color: C.ink }}
-                >
-                  {y}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setHidden((v) => !v)}
-          aria-pressed={hidden}
-          aria-label={hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
-          className="os-icon-btn os-eye-btn flex items-center gap-2 px-3 py-2 text-sm min-h-11"
-          style={{
-            background: hidden ? 'var(--black-950)' : C.card,
-            border: `1px solid ${hidden ? 'var(--black-950)' : C.border}`,
-            color: hidden ? 'var(--paper-50)' : C.ink,
-            borderRadius: RADIUS.md,
-          }}
-        >
-          {hidden ? <EyeOff size={17} strokeWidth={1.8} aria-hidden="true" /> : <Eye size={17} strokeWidth={1.8} aria-hidden="true" />}
-          <span className="os-eye-label hidden sm:inline">{hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}</span>
-        </button>
-      </div>
+      <TopBarControls
+        year={year}
+        setYear={setYear}
+        hidden={hidden}
+        setHidden={setHidden}
+        years={years}
+        Eye={Eye}
+        EyeOff={EyeOff}
+        ChevronDown={ChevronDown}
+        yearOpen={yearOpen}
+        setYearOpen={setYearOpen}
+        yearRef={yearRef}
+      />
     </div>
   );
 }

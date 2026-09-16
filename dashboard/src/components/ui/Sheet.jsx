@@ -16,7 +16,7 @@ export function Sheet({ open, title, onClose, children, wide = false }) {
 
   return (
     <div className="os-sheet-root fixed inset-0 z-[70] flex items-stretch justify-end">
-      <button type="button" className="absolute inset-0" style={{ background: 'rgba(15,18,24,0.38)' }} onClick={onClose} aria-label="إغلاق" />
+      <button type="button" className="absolute inset-0" style={{ background: 'color-mix(in srgb, var(--c-ink) 38%, transparent)' }} onClick={onClose} aria-label="إغلاق" />
       <aside
         className="os-sheet-panel relative h-full overflow-y-auto p-5 sm:p-7"
         style={{

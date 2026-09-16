@@ -1,6 +1,6 @@
-import { ENV } from '@/config/env';
+import { getApiUrl } from '@/lib/server';
 import { clearSession, getToken } from '@/lib/auth/session';
-
+import { isLocalToken } from '@/lib/auth/office';
 export class ApiError extends Error {
   status: number;
   payload: unknown;
@@ -55,11 +55,16 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     headers['X-API-TOKEN'] = token;
   }
 
-  const response = await fetch(`${ENV.apiUrl}${path}${qs(options.query)}`, {
-    method: options.method ?? 'GET',
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${getApiUrl()}${path}${qs(options.query)}`, {
+      method: options.method ?? 'GET',
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+  } catch {
+    throw new ApiError('تعذر الاتصال بالخادم. تحقق من عنوان الخادم والشبكة.', 0);
+  }
 
   const text = await response.text();
   let json: unknown = null;
@@ -72,9 +77,11 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   }
 
   if (response.status === 401 || response.status === 403) {
+    if (isLocalToken(token)) {
+      return (options.emptyAuth ?? null) as T;
+    }
     await clearSession();
-    onUnauthorized?.();
-    const message =
+    onUnauthorized?.();    const message =
       typeof json === 'object' && json && 'message' in json
         ? String((json as { message: string }).message)
         : 'انتهت الجلسة';

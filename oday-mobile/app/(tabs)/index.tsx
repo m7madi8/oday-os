@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { Banknote, CircleDollarSign, FolderKanban, ScrollText } from 'lucide-react-native';
 import { fetchOfficeSettings, fetchOverview } from '@/lib/api/dashboard';
 import { keys } from '@/lib/query';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useOffline } from '@/hooks/useOffline';
-import { C, FONT_BODY, FONT_HEAD, money, currencyFromId } from '@/theme';
-import { Card, EmptyState, ErrorState, Kpi, LoadingBlock, OfflineBanner, Row, SectionTitle } from '@/components/ui/Blocks';
+import { C, FONT_BODY, FONT_HEAD, LAYOUT, count, money, currencyFromId } from '@/theme';
+import { ActionChip, Card, EmptyState, ErrorState, LoadingBlock, OfflineBanner, Row, SectionTitle } from '@/components/ui/Blocks';
+import { FinanceCard, StatCard, Surface } from '@/components/ui/Cards';
+import { ScreenShell } from '@/components/ui/Chrome';
 import { QuickActions, type QuickKind } from '@/features/actions/QuickActions';
 import { can, displayName } from '@/lib/permissions';
 
@@ -23,16 +25,15 @@ export default function HomeScreen() {
   const data = overview.data;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <ScreenShell title="نظرة عامة">
       <OfflineBanner visible={offline} />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={overview.isRefetching} onRefresh={() => overview.refetch()} />}
       >
-        <View>
+        <View style={styles.hero}>
           <Text style={styles.kicker}>{office.data?.settings.officeName || session?.company.name || 'ODAY OS'}</Text>
           <Text style={styles.hello}>مرحباً، {displayName(session?.user)}</Text>
-          <Text style={styles.sub}>ما يحتاج انتباهاً الآن.</Text>
         </View>
 
         {overview.isLoading ? <LoadingBlock /> : null}
@@ -40,14 +41,20 @@ export default function HomeScreen() {
 
         {data ? (
           <>
-            <View style={styles.kpis}>
-              <Kpi label="إجمالي المستحقات" value={money(data.kpis.receivables, symbol)} />
-              <Kpi label="الدفعات القادمة" value={money(data.kpis.upcoming_payments_total, symbol)} hint={`${data.kpis.upcoming_payments_count} فاتورة`} />
-              <Kpi label="الشيكات القادمة" value={money(data.kpis.upcoming_cheques_total, symbol)} hint={`${data.kpis.upcoming_cheques_count} شيك`} />
-              <Kpi label="المشاريع النشطة" value={String(data.kpis.active_projects)} />
+            <View style={styles.statGrid}>
+              <StatCard icon={CircleDollarSign} label="مستحقات" value={money(data.kpis.receivables, symbol)} onPress={() => router.push('/finance/invoices')} />
+              <StatCard icon={ScrollText} label="شيكات قادمة" value={count(data.kpis.upcoming_cheques_count)} onPress={() => router.push('/finance/cheques')} />
+              <StatCard icon={FolderKanban} label="مشاريع نشطة" value={count(data.kpis.active_projects)} onPress={() => router.push('/(tabs)/projects')} />
+              <StatCard icon={Banknote} label="دفعات قادمة" value={count(data.kpis.upcoming_payments_count)} onPress={() => router.push('/finance/payments')} />
             </View>
 
-            <Card>
+            <View style={styles.financeRow}>
+              <FinanceCard featured kind="net" label="صافي المستحقات" value={money(data.kpis.receivables, symbol)} />
+              <FinanceCard kind="expense" label="شيكات قادمة" value={money(data.kpis.upcoming_cheques_total, symbol)} />
+              <FinanceCard kind="income" label="دفعات قادمة" value={money(data.kpis.upcoming_payments_total, symbol)} />
+            </View>
+
+            <Surface>
               <SectionTitle title="إجراءات سريعة" />
               <View style={styles.actions}>
                 {[
@@ -61,15 +68,13 @@ export default function HomeScreen() {
                     can(session?.user.permissions ?? '', session?.user.is_admin ?? false, session?.user.is_owner ?? false, perm),
                   )
                   .map(([label, key]) => (
-                  <Pressable key={key} onPress={() => setKind(key as QuickKind)} style={styles.action}>
-                    <Text style={styles.actionText}>{label}</Text>
-                  </Pressable>
-                ))}
+                    <ActionChip key={key} label={label} onPress={() => setKind(key as QuickKind)} />
+                  ))}
               </View>
-            </Card>
+            </Surface>
 
             <Card>
-              <SectionTitle title="تنبيهات مهمة" />
+              <SectionTitle title="تنبيهات وتحصيلات" />
               {data.alerts.length === 0 ? (
                 <EmptyState title="لا تنبيهات" body="الحسابات مستقرة حالياً." />
               ) : (
@@ -100,18 +105,20 @@ export default function HomeScreen() {
         ) : null}
       </ScrollView>
       <QuickActions kind={kind} onClose={() => setKind(null)} />
-    </SafeAreaView>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.paper },
-  content: { padding: 20, gap: 16, paddingBottom: 40 },
-  kicker: { color: C.bronze2, textAlign: 'right', fontFamily: FONT_BODY },
-  hello: { color: C.ink, fontFamily: FONT_HEAD, fontSize: 28, textAlign: 'right', marginTop: 4 },
-  sub: { color: C.inkSoft, textAlign: 'right', fontFamily: FONT_BODY, marginTop: 4 },
-  kpis: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10 },
+  content: {
+    paddingHorizontal: LAYOUT.contentPadX,
+    gap: LAYOUT.sectionGap,
+    paddingBottom: LAYOUT.contentPadBottom,
+  },
+  hero: { gap: 4, marginBottom: 4 },
+  kicker: { color: C.limeDeep, textAlign: 'right', fontFamily: FONT_BODY, fontSize: 13 },
+  hello: { color: C.ink, fontFamily: FONT_HEAD, fontSize: 22, textAlign: 'right' },
+  statGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: LAYOUT.cardGap },
+  financeRow: { gap: LAYOUT.cardGap },
   actions: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
-  action: { backgroundColor: C.tint, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 10 },
-  actionText: { color: C.ink, fontFamily: FONT_BODY },
 });

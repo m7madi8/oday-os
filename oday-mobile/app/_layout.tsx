@@ -53,7 +53,7 @@ export default function RootLayout() {
       <AppProviders>
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.paper } }}>
-          <Stack.Screen name="(auth)" options={{ contentStyle: { backgroundColor: '#0a0a0a' } }} />
+          <Stack.Screen name="(auth)" options={{ contentStyle: { backgroundColor: C.sidebar } }} />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="projects/[id]" />
           <Stack.Screen name="clients/[id]" />

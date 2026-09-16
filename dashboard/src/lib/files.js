@@ -1,5 +1,5 @@
 import { blobToBase64 } from './api/client';
-import { desktop, isDesktop } from './desktop';
+import { getDesktop, isDesktop } from './desktop';
 
 export function fileFromPicker(picked) {
   if (!picked) return null;
@@ -9,17 +9,18 @@ export function fileFromPicker(picked) {
 
 export async function openOrSaveBlob(blob, name, { print = false } = {}) {
   const fileName = name || 'oday-file';
-  if (isDesktop()) {
+  const bridge = getDesktop();
+  if (isDesktop() && bridge) {
     const data = await blobToBase64(blob);
     if (print) {
-      await desktop.print.pdf({ data, name: fileName });
+      await bridge.print.pdf({ data, name: fileName });
       return;
     }
     if (blob.type.includes('pdf')) {
-      await desktop.print.open({ data, name: fileName });
+      await bridge.print.open({ data, name: fileName });
       return;
     }
-    await desktop.files.save({ name: fileName, data, mime: blob.type });
+    await bridge.files.save({ name: fileName, data, mime: blob.type });
     return;
   }
 
@@ -47,20 +48,23 @@ export function openWhatsApp(phone) {
   const digits = String(phone || '').replace(/[^\d]/g, '');
   if (!digits) return;
   const url = `https://wa.me/${digits}`;
-  if (isDesktop()) desktop.shell.open(url);
+  const bridge = getDesktop();
+  if (isDesktop() && bridge?.shell) bridge.shell.open(url);
   else window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export function openEmail(email) {
   if (!email) return;
   const url = `mailto:${email}`;
-  if (isDesktop()) desktop.shell.open(url);
+  const bridge = getDesktop();
+  if (isDesktop() && bridge?.shell) bridge.shell.open(url);
   else window.location.href = url;
 }
 
 export async function pickNativeFile() {
-  if (isDesktop()) {
-    const picked = await desktop.files.open();
+  const bridge = getDesktop();
+  if (isDesktop() && bridge?.files) {
+    const picked = await bridge.files.open();
     return fileFromPicker(picked);
   }
   return null;

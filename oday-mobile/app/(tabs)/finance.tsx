@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { fetchOverview } from '@/lib/api/dashboard';
 import { keys } from '@/lib/query';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useOffline } from '@/hooks/useOffline';
-import { C, FONT_BODY, FONT_HEAD, currencyFromId, money } from '@/theme';
-import { Card, ErrorState, Kpi, LoadingBlock, OfflineBanner, SectionTitle } from '@/components/ui/Blocks';
+import { C, FONT_HEAD, LAYOUT, currencyFromId, money } from '@/theme';
+import { ActionChip, Card, ErrorState, LoadingBlock, OfflineBanner, SectionTitle } from '@/components/ui/Blocks';
+import { StatCard } from '@/components/ui/Cards';
+import { ScreenShell } from '@/components/ui/Chrome';
 import { QuickActions, type QuickKind } from '@/features/actions/QuickActions';
+import { CircleDollarSign, ScrollText } from 'lucide-react-native';
 
 const LINKS = [
   { href: '/finance/invoices', label: 'الفواتير' },
@@ -27,16 +29,18 @@ export default function FinanceScreen() {
   const symbol = currencyFromId(session?.company.currency_id).symbol;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <ScreenShell title="المالية">
       <OfflineBanner visible={offline} />
-      <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={overview.isRefetching} onRefresh={() => overview.refetch()} />}>
-        <Text style={styles.title}>المالية</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={overview.isRefetching} onRefresh={() => overview.refetch()} />}
+      >
         {overview.isLoading ? <LoadingBlock /> : null}
         {overview.isError ? <ErrorState onRetry={() => overview.refetch()} /> : null}
         {overview.data ? (
-          <View style={styles.kpis}>
-            <Kpi label="المستحقات" value={money(overview.data.kpis.receivables, symbol)} />
-            <Kpi label="دفعات قادمة" value={money(overview.data.kpis.upcoming_payments_total, symbol)} />
+          <View style={styles.statGrid}>
+            <StatCard icon={CircleDollarSign} label="المستحقات" value={money(overview.data.kpis.receivables, symbol)} />
+            <StatCard icon={ScrollText} label="دفعات قادمة" value={money(overview.data.kpis.upcoming_payments_total, symbol)} />
           </View>
         ) : null}
         <View style={styles.actions}>
@@ -46,13 +50,11 @@ export default function FinanceScreen() {
             ['+ إضافة شيك', 'cheque'],
             ['+ إنشاء فاتورة', 'invoice'],
           ].map(([label, key]) => (
-            <Pressable key={key} style={styles.chip} onPress={() => setKind(key as QuickKind)}>
-              <Text style={styles.chipText}>{label}</Text>
-            </Pressable>
+            <ActionChip key={key} label={label} onPress={() => setKind(key as QuickKind)} />
           ))}
         </View>
         <Card>
-          <SectionTitle title="السجلات" subtitle="عرض سريع بدل الجداول الكثيفة" />
+          <SectionTitle title="السجلات" />
           {LINKS.map((link) => (
             <Pressable key={link.href} onPress={() => router.push(link.href)} style={styles.row}>
               <Text style={styles.rowText}>{link.label}</Text>
@@ -61,18 +63,14 @@ export default function FinanceScreen() {
         </Card>
       </ScrollView>
       <QuickActions kind={kind} onClose={() => setKind(null)} />
-    </SafeAreaView>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.paper },
-  content: { padding: 20, gap: 16 },
-  title: { fontFamily: FONT_HEAD, fontSize: 28, color: C.ink, textAlign: 'right' },
-  kpis: { flexDirection: 'row-reverse', gap: 10 },
+  content: { paddingHorizontal: LAYOUT.contentPadX, gap: LAYOUT.sectionGap, paddingBottom: LAYOUT.contentPadBottom },
+  statGrid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: LAYOUT.cardGap },
   actions: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
-  chip: { backgroundColor: C.sidebar, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12 },
-  chipText: { color: C.white, fontFamily: FONT_BODY },
   row: { paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.border },
   rowText: { fontFamily: FONT_HEAD, fontSize: 16, color: C.ink, textAlign: 'right' },
 });

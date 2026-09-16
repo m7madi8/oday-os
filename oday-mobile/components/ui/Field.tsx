@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { C, FONT_BODY, FONT_BODY_MED, TAP } from '@/theme';
+import { C, FONT_BODY, FONT_BODY_MED, RADIUS, TAP } from '@/theme';
 
 type Props = TextInputProps & {
   label: string;
@@ -9,7 +9,7 @@ type Props = TextInputProps & {
 export function Field({ label, inverted, style, ...rest }: Props) {
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.label, inverted && { color: C.bronze1 }]}>{label}</Text>
+      <Text style={[styles.label, inverted && { color: C.lime }]}>{label}</Text>
       <TextInput
         placeholderTextColor={C.inkFaint}
         style={[styles.input, style]}
@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.white,
-    borderRadius: 16,
+    borderRadius: RADIUS.lg,
     paddingHorizontal: 14,
     color: C.ink,
     fontFamily: FONT_BODY,

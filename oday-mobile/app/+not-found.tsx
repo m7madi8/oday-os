@@ -20,5 +20,5 @@ const styles = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: C.paper, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
   title: { fontFamily: FONT_HEAD, fontSize: 22, color: C.ink },
   link: { padding: 12 },
-  linkText: { fontFamily: FONT_BODY, color: C.bronze2 },
+  linkText: { fontFamily: FONT_BODY, color: C.limeDeep },
 });

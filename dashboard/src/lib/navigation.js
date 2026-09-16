@@ -61,10 +61,10 @@ export function mobileTabItems(groups = NAV_GROUPS) {
   const items = flattenNavItems(groups);
   const byId = Object.fromEntries(items.map((item) => [item.id, item]));
   const picked = [
-    byId['ai-assistant'],
-    byId.invoices || byId.payments || byId.checks,
-    byId.projects || byId.clients,
     byId.dashboard,
+    byId.projects || byId.clients,
+    byId.invoices || byId.payments || byId.checks,
+    byId['ai-assistant'],
   ].filter(Boolean);
   return picked.filter((item, index) => picked.findIndex((entry) => entry.id === item.id) === index);
 }

@@ -20,7 +20,7 @@ export function AiAssistant() {
           width: 52,
           height: 52,
           background: C.tint,
-          color: C.bronze1,
+          color: C.lime,
           borderRadius: RADIUS.md,
         }}
       >

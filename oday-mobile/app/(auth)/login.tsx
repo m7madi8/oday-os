@@ -20,24 +20,18 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { ArrowLeft, Check, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { precheckLogin } from '@/lib/api/auth';
+import { pingServer } from '@/lib/api/health';
 import { ApiError } from '@/lib/api/client';
+import { isOfficeLogin } from '@/lib/auth/office';
+import {
+  defaultServerUrl,
+  isPhysicalDeviceLoopback,
+  loadStoredServerUrl,
+  persistServerUrl,
+} from '@/lib/server';
+import { OE, C } from '@/theme';
 
 const portrait = require('@/assets/images/owner-portrait-desktop.webp');
-
-const OE = {
-  black950: '#0a0a0a',
-  black850: '#161514',
-  black800: '#1c1a18',
-  line800: '#2a2825',
-  paper50: '#f6f4ee',
-  warm300: '#c8c2b3',
-  warm500: '#948c78',
-  gold400: '#d6b784',
-  gold500: '#bb9660',
-  danger: '#c1573d',
-  success: '#5c9270',
-  placeholder: '#6b665a',
-} as const;
 
 const FONT_DISPLAY = Platform.select({ ios: undefined, default: 'sans-serif' }) as string | undefined;
 const FONT_TEXT = Platform.select({ ios: undefined, default: 'sans-serif' }) as string | undefined;
@@ -49,6 +43,14 @@ const APPLE = {
 
 const t = {
   ownerRole: 'المؤسس والشريك الرئيسي',
+  serverLabel: 'عنوان الخادم',
+  serverPlaceholder: Platform.OS === 'web' ? 'http://127.0.0.1:8000' : 'http://192.168.1.13:8000',
+  serverHint:
+    Platform.OS === 'web'
+      ? 'على الكمبيوتر استخدم 127.0.0.1:8000 مع php artisan serve'
+      : 'استخدم IP جهاز الكمبيوتر على الشبكة، وليس 127.0.0.1',
+  serverRequired: 'أدخل عنوان خادم Laravel.',
+  serverLoopback: 'على الهاتف استخدم IP الشبكة (مثل 192.168.x.x) وليس 127.0.0.1',
   userLabel: 'اسم المستخدم',
   userPlaceholder: 'oday',
   passwordLabel: 'كلمة المرور',
@@ -89,6 +91,7 @@ function bodyType(size: number, weight: '400' | '500' | '600' = '400') {
 export default function LoginScreen() {
   const { login } = useAuth();
   const insets = useSafeAreaInsets();
+  const [serverUrl, setServerUrl] = useState(defaultServerUrl());
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
@@ -96,7 +99,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
-  const [focused, setFocused] = useState<'user' | 'password' | 'otp' | null>(null);
+  const [focused, setFocused] = useState<'server' | 'user' | 'password' | 'otp' | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const rtl = true;
@@ -109,9 +112,19 @@ export default function LoginScreen() {
     return () => sub?.remove?.();
   }, []);
 
+  useEffect(() => {
+    loadStoredServerUrl().then(() => {
+      setServerUrl(defaultServerUrl());
+    });
+  }, []);
+
   const submit = async () => {
     if (status === 'loading' || status === 'success') return;
-    if (!username.trim() || !password) {
+
+    const user = username.trim();
+    const pass = password.trim();
+
+    if (!user || !pass) {
       setStatus('error');
       setErrorMsg(t.errorRequired);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -120,16 +133,45 @@ export default function LoginScreen() {
 
     setStatus('loading');
     setErrorMsg('');
+
     try {
+      if (isOfficeLogin(user, pass)) {
+        await login(user, pass);
+        setStatus('success');
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return;
+      }
+
+      const nextServer = await persistServerUrl(serverUrl);
+      if (!nextServer) {
+        setStatus('error');
+        setErrorMsg(t.serverRequired);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+      if (isPhysicalDeviceLoopback(nextServer)) {
+        setStatus('error');
+        setErrorMsg(t.serverLoopback);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+
+      const health = await pingServer(nextServer);
+      if (!health.ok) {
+        setStatus('error');
+        setErrorMsg(health.message);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
       if (!needOtp) {
-        const check = await precheckLogin(username.trim());
+        const check = await precheckLogin(user);
         if (check.totp_required) {
           setNeedOtp(true);
           setStatus('idle');
           return;
         }
       }
-      await login(username.trim(), password, otp || undefined);
+      await login(user, pass, otp || undefined);
       setStatus('success');
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
@@ -164,20 +206,20 @@ export default function LoginScreen() {
             accessibilityIgnoresInvertColors
           />
           <LinearGradient
-            colors={[OE.black950, 'rgba(10,10,10,0)']}
+            colors={[OE.black950, 'transparent']}
             start={{ x: 0.5, y: 1 }}
             end={{ x: 0.5, y: 0.74 }}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
           <LinearGradient
-            colors={[OE.black950, 'rgba(10,10,10,0)']}
+            colors={[OE.black950, 'transparent']}
             locations={[0, 0.2]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
           <LinearGradient
-            colors={[OE.black950, 'rgba(10,10,10,0)']}
+            colors={[OE.black950, 'transparent']}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 0.16, y: 0.5 }}
             style={StyleSheet.absoluteFill}
@@ -201,6 +243,27 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.form}>
+            <View style={styles.field}>
+              <Text style={[styles.label, { textAlign: rtl ? 'right' : 'left' }]}>{t.serverLabel}</Text>
+              <View style={[styles.inputWrap, invalid && styles.inputInvalid, focused === 'server' && styles.inputFocus]}>
+                <TextInput
+                  value={serverUrl}
+                  onChangeText={setServerUrl}
+                  onFocus={() => setFocused('server')}
+                  onBlur={() => setFocused((current) => (current === 'server' ? null : current))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="off"
+                  keyboardType="url"
+                  placeholder={t.serverPlaceholder}
+                  placeholderTextColor={OE.placeholder}
+                  style={[styles.input, styles.ltrInput]}
+                  accessibilityLabel={t.serverLabel}
+                />
+              </View>
+              <Text style={styles.hint}>{t.serverHint}</Text>
+            </View>
+
             <View style={styles.field}>
               <Text style={[styles.label, { textAlign: rtl ? 'right' : 'left' }]}>{t.userLabel}</Text>
               <View style={[styles.inputWrap, invalid && styles.inputInvalid, focused === 'user' && styles.inputFocus]}>
@@ -365,7 +428,7 @@ const styles = StyleSheet.create({
   },
   forgot: {
     ...bodyType(13),
-    color: OE.gold400,
+    color: C.lime,
   },
   inputWrap: {
     height: 44,
@@ -376,13 +439,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   inputInvalid: { borderColor: OE.danger },
-  inputFocus: { borderColor: OE.gold500, backgroundColor: OE.black800 },
+  inputFocus: { borderColor: C.limeDeep, backgroundColor: OE.black800 },
   input: {
     height: 44,
     paddingHorizontal: 16,
     color: OE.paper50,
     ...bodyType(17),
     letterSpacing: Platform.OS === 'ios' ? -0.35 : 0,
+  },
+  ltrInput: { textAlign: 'left', writingDirection: 'ltr' },
+  hint: {
+    ...bodyType(12),
+    color: OE.warm500,
+    textAlign: 'right',
   },
   eye: { position: 'absolute', end: 12, top: 13 },
   error: { minHeight: 0, overflow: 'hidden' },
@@ -402,7 +471,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  submitPressed: { backgroundColor: OE.gold400, transform: [{ scale: 0.99 }] },
+  submitPressed: { backgroundColor: C.lime, transform: [{ scale: 0.99 }] },
   submitSuccess: { backgroundColor: OE.success },
   submitBusy: { opacity: 0.88 },
   submitLabel: {

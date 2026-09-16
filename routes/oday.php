@@ -23,6 +23,10 @@ Route::prefix('api/oday')->middleware(['api', 'throttle:60,1', 'oday.token'])->g
     Route::put('items/{key}', [OdayDashboardController::class, 'upsert']);
 });
 
+Route::prefix('api/oday/mobile')->middleware(['api', 'throttle:60,1'])->group(function () {
+    Route::get('health', fn () => response()->json(['ok' => true, 'message' => 'ODAY mobile API']));
+});
+
 Route::prefix('api/oday/mobile')->middleware(['api', 'throttle:login', 'email_db'])->group(function () {
     Route::post('login/precheck', [MobileAuthController::class, 'precheck']);
     Route::post('login', [MobileAuthController::class, 'login']);

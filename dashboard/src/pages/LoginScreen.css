@@ -1,15 +1,4 @@
 .oe {
-  --black-950: #0a0a0a;
-  --black-850: #161514;
-  --black-800: #1c1a18;
-  --line-800: #2a2825;
-  --paper-50: #f6f4ee;
-  --warm-300: #c8c2b3;
-  --warm-500: #948c78;
-  --gold-400: #d6b784;
-  --gold-500: #bb9660;
-  --danger-500: #c1573d;
-  --success-500: #5c9270;
   --font-display: "SF Pro AR Display", "SF Pro Display", "SF Arabic", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-text: "SF Pro AR Text", "SF Pro Text", "SF Arabic", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-system: var(--font-text);
@@ -80,9 +69,9 @@
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(0deg, var(--black-950) 0%, rgba(10, 10, 10, 0) 26%),
-    linear-gradient(180deg, var(--black-950) 0%, rgba(10, 10, 10, 0) 20%),
-    linear-gradient(90deg, var(--black-950) 0%, rgba(10, 10, 10, 0) 16%);
+    linear-gradient(0deg, var(--black-950) 0%, rgba(17, 18, 16, 0) 26%),
+    linear-gradient(180deg, var(--black-950) 0%, rgba(17, 18, 16, 0) 20%),
+    linear-gradient(90deg, var(--black-950) 0%, rgba(17, 18, 16, 0) 16%);
 }
 
 .oe-visual-caption {
@@ -232,7 +221,7 @@
 }
 
 .oe-input-wrap input::placeholder {
-  color: #6b665a;
+  color: var(--warm-500);
   opacity: 1;
 }
 

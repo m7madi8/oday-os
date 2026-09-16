@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createProject, listProjects } from '../lib/api/projects';
-import { listClients } from '../lib/api/clients';
+import { createClient, listClients } from '../lib/api/clients';
 import { invalidateFinance, keys } from '../lib/query';
 import { money } from '../theme';
 import { canUser } from '../lib/permissions';
 import { useAuth } from '../lib/auth/AuthProvider';
 import { Sheet } from '../components/ui/Sheet';
 import { ClientSelect, ResourcePage } from '../components/ui/ResourcePage';
-import { PrimaryButton } from '../components/ui/Actions';
+import { GhostButton, PrimaryButton } from '../components/ui/Actions';
 import { TextInput } from '../components/settings/Fields';
 import { showToast } from '../lib/toast';
 import { todayIso } from '../lib/labels';
@@ -19,7 +19,11 @@ export function Projects({ hidden }) {
   const [filter, setFilter] = useState('');
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
+  const [clientMode, setClientMode] = useState('new');
   const [clientId, setClientId] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
   const [amount, setAmount] = useState('');
   const [due, setDue] = useState('');
 
@@ -31,20 +35,40 @@ export function Projects({ hidden }) {
   const rows = query.data?.data || [];
   const canCreate = canUser(session?.user, 'create_project');
 
+  const canSave = name && (clientMode === 'new' ? clientName.trim() : clientId);
+
   const mutation = useMutation({
-    mutationFn: () =>
-      createProject({
+    mutationFn: async () => {
+      let resolvedClientId = clientId;
+      if (clientMode === 'new') {
+        const created = await createClient({
+          name: clientName.trim(),
+          contacts: [{ first_name: clientName.trim(), email: clientEmail.trim(), phone: clientPhone.trim(), send_email: false }],
+        });
+        resolvedClientId = created.data.id;
+      }
+      if (!resolvedClientId) {
+        throw new Error('اختر العميل أو أدخل بيانات عميل جديد');
+      }
+      return createProject({
         name,
-        client_id: clientId,
+        client_id: resolvedClientId,
         budgeted_amount: Number(amount) || 0,
         due_date: due || undefined,
-      }),
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       setOpen(false);
       setName('');
+      setClientMode('new');
+      setClientId('');
+      setClientName('');
+      setClientPhone('');
+      setClientEmail('');
       setAmount('');
-      showToast('تم حفظ المشروع', 'ok');
+      setDue('');
+      showToast(clientMode === 'new' ? 'تم حفظ المشروع والعميل' : 'تم حفظ المشروع', 'ok');
     },
     onError: (error) => showToast(error.message, 'error'),
   });
@@ -81,7 +105,23 @@ export function Projects({ hidden }) {
           <TextInput value={name} onChange={(event) => setName(event.target.value)} />
         </Field>
         <Field label="العميل">
-          <ClientSelect clients={clients.data?.data} value={clientId} onChange={setClientId} />
+          <div className="flex flex-wrap gap-2 mb-2">
+            <GhostButton type="button" onClick={() => setClientMode('new')} className={clientMode === 'new' ? 'opacity-100' : 'opacity-60'}>
+              عميل جديد
+            </GhostButton>
+            <GhostButton type="button" onClick={() => setClientMode('existing')} className={clientMode === 'existing' ? 'opacity-100' : 'opacity-60'}>
+              عميل موجود
+            </GhostButton>
+          </div>
+          {clientMode === 'new' ? (
+            <div className="space-y-3">
+              <TextInput value={clientName} onChange={(event) => setClientName(event.target.value)} placeholder="اسم العميل" />
+              <TextInput value={clientPhone} onChange={(event) => setClientPhone(event.target.value)} placeholder="هاتف العميل" />
+              <TextInput value={clientEmail} onChange={(event) => setClientEmail(event.target.value)} placeholder="بريد العميل" />
+            </div>
+          ) : (
+            <ClientSelect clients={clients.data?.data} value={clientId} onChange={setClientId} />
+          )}
         </Field>
         <Field label="قيمة المشروع">
           <TextInput value={amount} onChange={(event) => setAmount(event.target.value)} className="tabular-nums" />
@@ -89,8 +129,8 @@ export function Projects({ hidden }) {
         <Field label="تاريخ الاستحقاق">
           <TextInput type="date" value={due} onChange={(event) => setDue(event.target.value)} />
         </Field>
-        <PrimaryButton disabled={!name || !clientId || mutation.isPending} loading={mutation.isPending} onClick={() => mutation.mutate()}>
-          حفظ المشروع
+        <PrimaryButton disabled={!canSave || mutation.isPending} loading={mutation.isPending} onClick={() => mutation.mutate()}>
+          {clientMode === 'new' ? 'حفظ المشروع والعميل' : 'حفظ المشروع'}
         </PrimaryButton>
         <p className="text-base" style={{ color: C.inkFaint }}>التاريخ الافتراضي إن لم يُحدد: {todayIso()}</p>
       </Sheet>

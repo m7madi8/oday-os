@@ -12,7 +12,10 @@ const OFFICE_PASSWORD = 'oday';
 const AuthContext = createContext(null);
 
 function isOfficeLogin(username, password) {
-  return username.trim().toLowerCase() === OFFICE_USERNAME && password === OFFICE_PASSWORD;
+  return (
+    username.trim().toLowerCase() === OFFICE_USERNAME &&
+    password.trim() === OFFICE_PASSWORD
+  );
 }
 
 function localOfficeSession() {
@@ -65,7 +68,7 @@ export function AppProviders({ children }) {
   }, []);
 
   const authenticate = useCallback(async (email, password, otp) => {
-    if (isOfficeLogin(email, password) && !otp) {
+    if (isOfficeLogin(email, password)) {
       return localOfficeSession();
     }
 

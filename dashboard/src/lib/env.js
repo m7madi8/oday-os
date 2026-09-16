@@ -1,4 +1,4 @@
-import { desktop, isDesktop } from './desktop';
+import { getDesktop, isDesktop } from './desktop';
 
 let runtimeServerUrl = '';
 
@@ -29,19 +29,21 @@ export function getApiRoot() {
 }
 
 export async function loadStoredServerUrl() {
-  if (!isDesktop()) return '';
-  const stored = await desktop.store.get('serverUrl');
+  const bridge = getDesktop();
+  if (!isDesktop() || !bridge?.store) return '';
+  const stored = await bridge.store.get('serverUrl');
   const next = setRuntimeServerUrl(stored || '');
-  await desktop.updates?.syncServer?.();
+  await bridge.updates?.syncServer?.();
   return next;
 }
 
 export async function persistServerUrl(value) {
   const next = setRuntimeServerUrl(value);
-  if (isDesktop()) {
-    if (next) await desktop.store.set('serverUrl', next);
-    else await desktop.store.delete('serverUrl');
-    await desktop.updates?.syncServer?.();
+  const bridge = getDesktop();
+  if (isDesktop() && bridge?.store) {
+    if (next) await bridge.store.set('serverUrl', next);
+    else await bridge.store.delete('serverUrl');
+    await bridge.updates?.syncServer?.();
   }
   return next;
 }

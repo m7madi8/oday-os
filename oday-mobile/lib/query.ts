@@ -27,13 +27,13 @@ focusManager.setEventListener((handleFocus) => {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 8_000,
+      staleTime: 3_000,
       gcTime: 30 * 60_000,
       retry: 1,
       refetchOnReconnect: true,
       refetchOnWindowFocus: true,
-      refetchInterval: 12_000,
-      refetchIntervalInBackground: false,
+      refetchInterval: 5_000,
+      refetchIntervalInBackground: true,
     },
     mutations: {
       retry: 0,

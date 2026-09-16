@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { chat } from '@/lib/api/ai';
 import { ApiError } from '@/lib/api/client';
-import { C, FONT_BODY, FONT_HEAD, TAP } from '@/theme';
+import { C, FONT_BODY, LAYOUT, RADIUS, TAP } from '@/theme';
+import { ActionChip } from '@/components/ui/Blocks';
+import { ScreenShell } from '@/components/ui/Chrome';
 import { Button } from '@/components/ui/Button';
 import { useOffline } from '@/hooks/useOffline';
 
@@ -51,23 +52,17 @@ export default function AiScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.bar}>
-        <Pressable onPress={() => router.back()}><Text style={styles.back}>رجوع</Text></Pressable>
-        <Text style={styles.barTitle}>المساعد الذكي</Text>
-      </View>
+    <ScreenShell title="المساعد الذكي" onBack={() => router.back()} padBottom={0}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.thread}>
           {turns.map((turn, index) => (
             <View key={`${turn.role}-${index}`} style={[styles.bubble, turn.role === 'user' ? styles.user : styles.bot]}>
-              <Text style={[styles.bubbleText, turn.role === 'user' && { color: C.white }]}>{turn.content}</Text>
+              <Text style={[styles.bubbleText, turn.role === 'user' && { color: C.sidebarTitle }]}>{turn.content}</Text>
             </View>
           ))}
           <View style={styles.prompts}>
             {PROMPTS.map((prompt) => (
-              <Pressable key={prompt} onPress={() => send(prompt)} style={styles.prompt}>
-                <Text style={styles.promptText}>{prompt}</Text>
-              </Pressable>
+              <ActionChip key={prompt} label={prompt} onPress={() => send(prompt)} />
             ))}
           </View>
         </ScrollView>
@@ -84,23 +79,17 @@ export default function AiScreen() {
           <Button label="إرسال" loading={loading} disabled={!input.trim() || offline} onPress={() => send(input)} />
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenShell>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.paper },
-  bar: { flexDirection: 'row-reverse', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
-  back: { color: C.bronze2, fontFamily: FONT_BODY },
-  barTitle: { fontFamily: FONT_HEAD, color: C.ink },
-  thread: { padding: 20, gap: 10, paddingBottom: 20 },
-  bubble: { borderRadius: 18, padding: 14, maxWidth: '92%' },
+  thread: { paddingHorizontal: LAYOUT.contentPadX, gap: 10, paddingBottom: 20 },
+  bubble: { borderRadius: RADIUS.lg, padding: 14, maxWidth: '92%' },
   user: { alignSelf: 'flex-start', backgroundColor: C.sidebar },
-  bot: { alignSelf: 'flex-end', backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
+  bot: { alignSelf: 'flex-end', backgroundColor: C.card, borderWidth: 1, borderColor: C.border },
   bubbleText: { fontFamily: FONT_BODY, color: C.ink, writingDirection: 'rtl', textAlign: 'right' },
   prompts: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  prompt: { backgroundColor: C.tint, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  promptText: { fontFamily: FONT_BODY, color: C.inkSoft, fontSize: 13 },
-  composer: { padding: 16, gap: 10, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.white },
-  input: { minHeight: TAP, borderWidth: 1, borderColor: C.border, borderRadius: 16, paddingHorizontal: 14, fontFamily: FONT_BODY, color: C.ink },
+  composer: { padding: 16, gap: 10, borderTopWidth: 1, borderTopColor: C.border, backgroundColor: C.card },
+  input: { minHeight: TAP, borderWidth: 1, borderColor: C.border, borderRadius: RADIUS.lg, paddingHorizontal: 14, fontFamily: FONT_BODY, color: C.ink },
 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Loader2 } from 'lucide-react';
-import { FONT_HEAD, RADIUS } from '../theme';
+import { FONT_HEAD, RADIUS, C } from '../theme';
 import { getItem, setItem } from '../lib/storage';
 
 function autosize(node) {
@@ -52,17 +52,17 @@ export function QuickNotes() {
     <section
       className="os-surface p-4 sm:p-6 fade-up"
       style={{
-        background: 'var(--paper-50)',
-        border: '1px solid var(--paper-200)',
+        background: C.paper,
+        border: `1px solid ${C.border}`,
         borderRadius: RADIUS.md,
         animationDelay: '420ms',
       }}
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 mb-3">
-        <h3 style={{ color: 'var(--black-950)', fontFamily: FONT_HEAD, fontSize: 22, fontWeight: 600 }}>
+        <h3 style={{ color: C.ink, fontFamily: FONT_HEAD, fontSize: 22, fontWeight: 600 }}>
           مذكّرات المكتب
         </h3>
-        <div className="flex items-center gap-1 shrink-0" style={{ color: 'var(--c-inkSoft)', fontSize: '1rem' }} aria-live="polite">
+        <div className="flex items-center gap-1 shrink-0" style={{ color: C.inkSoft, fontSize: '1rem' }} aria-live="polite">
           {status === 'saving' && (
             <>
               <Loader2 size={16} strokeWidth={1.5} className="animate-spin" aria-hidden="true" />
@@ -71,7 +71,7 @@ export function QuickNotes() {
           )}
           {status === 'saved' && (
             <>
-              <Check size={16} strokeWidth={1.5} style={{ color: 'var(--success-500)' }} aria-hidden="true" />
+              <Check size={16} strokeWidth={1.5} style={{ color: C.emerald }} aria-hidden="true" />
               <span>تم الحفظ</span>
             </>
           )}
@@ -87,7 +87,7 @@ export function QuickNotes() {
         aria-label="ملاحظات سريعة"
         className="os-notes-area"
       />
-      <p className="mt-2 text-start" style={{ color: 'var(--c-inkSoft)', fontSize: '1rem' }}>
+      <p className="mt-2 text-start" style={{ color: C.inkSoft, fontSize: '1rem' }}>
         محفوظة أونلاين وتظهر من الجوال أو المكتب بعد الحفظ
       </p>
     </section>

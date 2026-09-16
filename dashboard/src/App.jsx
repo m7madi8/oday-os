@@ -196,7 +196,7 @@ export default function App() {
 
   if (!session) {
     return (
-      <div className="h-svh flex flex-col overflow-hidden bg-[#0a0a0a]">
+      <div className="h-svh flex flex-col overflow-hidden" style={{ background: C.sidebar }}>
         {desktop ? <DesktopTitleBar /> : null}
         <div className="flex-1 min-h-0">
           <Login />

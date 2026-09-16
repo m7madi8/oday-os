@@ -1,4 +1,4 @@
-import { desktop, isDesktop } from '../desktop';
+import { getDesktop, isDesktop } from '../desktop';
 
 const TOKEN_KEY = 'oday.token';
 const USER_KEY = 'oday.user';
@@ -22,10 +22,11 @@ function webClear(key) {
 }
 
 export async function saveSession(payload) {
-  if (isDesktop()) {
-    await desktop.store.set('token', payload.token);
-    await desktop.store.set('user', JSON.stringify(payload.user));
-    await desktop.store.set('company', JSON.stringify(payload.company));
+  const store = isDesktop() ? getDesktop()?.store : null;
+  if (store) {
+    await store.set('token', payload.token);
+    await store.set('user', JSON.stringify(payload.user));
+    await store.set('company', JSON.stringify(payload.company));
     return;
   }
   webSet(TOKEN_KEY, payload.token);
@@ -38,10 +39,11 @@ export async function loadSession() {
     let token;
     let userRaw;
     let companyRaw;
-    if (isDesktop()) {
-      token = await desktop.store.get('token');
-      userRaw = await desktop.store.get('user');
-      companyRaw = await desktop.store.get('company');
+    const store = isDesktop() ? getDesktop()?.store : null;
+    if (store) {
+      token = await store.get('token');
+      userRaw = await store.get('user');
+      companyRaw = await store.get('company');
     } else {
       token = webGet(TOKEN_KEY);
       userRaw = webGet(USER_KEY);
@@ -60,16 +62,18 @@ export async function loadSession() {
 }
 
 export async function getToken() {
-  if (isDesktop()) return desktop.store.get('token');
+  const store = isDesktop() ? getDesktop()?.store : null;
+  if (store) return store.get('token');
   return webGet(TOKEN_KEY);
 }
 
 export async function clearSession() {
-  if (isDesktop()) {
+  const store = isDesktop() ? getDesktop()?.store : null;
+  if (store) {
     await Promise.all([
-      desktop.store.delete('token'),
-      desktop.store.delete('user'),
-      desktop.store.delete('company'),
+      store.delete('token'),
+      store.delete('user'),
+      store.delete('company'),
     ]);
     return;
   }

@@ -14,8 +14,8 @@ export function StatCard({ icon: Icon, label, value, delayMs, onOpen }) {
       onClick={onOpen}
       className={`os-stat-card p-4 sm:p-5 fade-up ${onOpen ? 'os-stat-card-action' : ''}`}
       style={{
-        background: 'var(--paper-50)',
-        border: '1px solid var(--paper-200)',
+        background: C.paper,
+        border: `1px solid ${C.border}`,
         borderRadius: RADIUS.md,
         animationDelay: `${delayMs}ms`,
         textAlign: 'start',
@@ -23,7 +23,7 @@ export function StatCard({ icon: Icon, label, value, delayMs, onOpen }) {
     >
       <div className="os-stat-top flex items-start justify-end mb-3">
         <span className="os-stat-chip">
-          <Icon size={20} strokeWidth={ICON_STROKE} aria-hidden="true" style={{ color: 'var(--warm-500)' }} />
+          <Icon size={20} strokeWidth={ICON_STROKE} aria-hidden="true" style={{ color: C.inkSoft }} />
         </span>
         {onOpen ? (
           <ArrowUpRight className="os-stat-arrow" size={14} strokeWidth={2} aria-hidden="true" />
@@ -32,7 +32,7 @@ export function StatCard({ icon: Icon, label, value, delayMs, onOpen }) {
       <div>
         <div
           className="os-stat-number tabular-nums whitespace-nowrap overflow-hidden"
-          style={{ color: 'var(--black-950)', fontFamily: FONT_SERIF, fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 500, lineHeight: 1.15 }}
+          style={{ color: C.ink, fontFamily: FONT_SERIF, fontSize: 'clamp(1.5rem, 4vw, 2rem)', fontWeight: 500, lineHeight: 1.15 }}
         >
           {value}
         </div>
@@ -51,12 +51,18 @@ function HeroBars({ months }) {
   const heights = hasData
     ? values.map((value) => Math.max(12, Math.round((value / max) * 100)))
     : PLACEHOLDER_BARS;
+  const currentIndex = (months || []).findIndex((month) => month.tone === 'current');
+  const highlightIndex = currentIndex >= 0 ? currentIndex : heights.length - 1;
 
   return (
     <div className="os-hero-chart" aria-hidden={!hasData}>
       <div className="os-hero-bars">
         {heights.map((height, index) => (
-          <span key={MONTHS_SHORT[index] || index} style={{ height: `${height}%` }} />
+          <span
+            key={MONTHS_SHORT[index] || index}
+            className={index === highlightIndex ? 'is-current' : undefined}
+            style={{ height: `${height}%` }}
+          />
         ))}
       </div>
       <div className="os-hero-bars-labels">
@@ -70,17 +76,17 @@ function HeroBars({ months }) {
 
 export function FinanceCard({ kind, icon: Icon, label, value, year, delayMs, featured = false, months }) {
   const trendColor = kind === 'expense'
-    ? 'var(--danger-500)'
+    ? C.burgundy
     : kind === 'income'
-      ? 'var(--success-500)'
-      : 'var(--warm-500)';
+      ? C.emerald
+      : C.inkSoft;
 
   return (
     <div
       className={`os-finance-card fade-up min-w-0 overflow-hidden ${featured ? 'is-hero' : ''} is-${kind} p-5 sm:p-6`}
       style={{
-        background: 'var(--paper-50)',
-        border: featured ? '1px solid var(--gold-500)' : '1px solid var(--paper-200)',
+        background: C.paper,
+        border: `1px solid ${C.border}`,
         borderRadius: RADIUS.md,
         animationDelay: `${delayMs}ms`,
       }}
@@ -106,7 +112,7 @@ export function FinanceCard({ kind, icon: Icon, label, value, year, delayMs, fea
       <div
         className="os-finance-number tabular-nums whitespace-nowrap overflow-hidden"
         style={{
-          color: 'var(--black-950)',
+          color: C.ink,
           fontFamily: FONT_SERIF,
           fontSize: featured ? 'clamp(1.6rem, 3.6vw, 2.15rem)' : 'clamp(1.35rem, 3vw, 1.75rem)',
           fontWeight: 500,
@@ -133,8 +139,8 @@ export function MonthCard({ index, name, value, hasData, hidden, money, pad2, to
       data-month-tone={tone}
       className="os-surface p-3 sm:p-4 flex flex-col justify-between min-w-0"
       style={{
-        background: 'var(--paper-50)',
-        border: '1px solid var(--paper-200)',
+        background: C.paper,
+        border: `1px solid ${C.border}`,
         borderRadius: RADIUS.md,
         minHeight: 108,
       }}
@@ -143,7 +149,7 @@ export function MonthCard({ index, name, value, hasData, hidden, money, pad2, to
         <span
           className="text-sm min-w-0 truncate"
           style={{
-            color: isCurrent ? 'var(--black-950)' : 'var(--warm-500)',
+            color: isCurrent ? C.ink : C.inkSoft,
             fontWeight: isCurrent ? 500 : 400,
           }}
         >
@@ -151,7 +157,7 @@ export function MonthCard({ index, name, value, hasData, hidden, money, pad2, to
         </span>
         <span
           className="text-xs tabular-nums leading-none px-1 py-1 shrink-0"
-          style={{ color: 'var(--warm-500)', borderRadius: RADIUS.sm }}
+          style={{ color: C.inkSoft, borderRadius: RADIUS.sm }}
         >
           {pad2(index)}/12
         </span>
@@ -161,7 +167,7 @@ export function MonthCard({ index, name, value, hasData, hidden, money, pad2, to
         <div
           className="text-sm sm:text-base tabular-nums mb-2 whitespace-nowrap overflow-hidden"
           style={{
-            color: isCurrent ? 'var(--black-950)' : 'var(--warm-500)',
+            color: isCurrent ? C.ink : C.inkSoft,
             fontFamily: FONT_SERIF,
             fontWeight: isCurrent ? 500 : 400,
             opacity: tone === 'future' ? 0.7 : 1,
@@ -169,12 +175,12 @@ export function MonthCard({ index, name, value, hasData, hidden, money, pad2, to
         >
           {hasData ? money(value, hidden) : '—'}
         </div>
-        <div className="h-1 overflow-hidden" style={{ background: 'var(--paper-100)', borderRadius: RADIUS.pill }}>
+        <div className="h-1 overflow-hidden" style={{ background: C.tint, borderRadius: RADIUS.pill }}>
           <div
             className="h-full"
             style={{
               width: barWidth,
-              background: 'var(--black-950)',
+              background: C.ink,
               opacity,
               borderRadius: RADIUS.pill,
             }}
@@ -190,13 +196,13 @@ export function KpiMini({ label, value, sub }) {
     <div
       className="os-surface w-full sm:flex-1 min-w-0 px-4 py-3"
       style={{
-        background: 'var(--paper-50)',
-        border: '1px solid var(--paper-200)',
+        background: C.paper,
+        border: `1px solid ${C.border}`,
         borderRadius: RADIUS.md,
       }}
     >
       <div className="mb-1" style={{ color: 'var(--c-inkSoft)', fontSize: '1.0625rem' }}>{label}</div>
-      <div className="tabular-nums" style={{ color: 'var(--black-950)', fontFamily: FONT_SERIF, fontSize: 22, fontWeight: 500 }}>{value}</div>
+      <div className="tabular-nums" style={{ color: C.ink, fontFamily: FONT_SERIF, fontSize: 22, fontWeight: 500 }}>{value}</div>
       {sub && <div className="mt-0.5" style={{ color: 'var(--c-inkSoft)', fontSize: '1rem' }}>{sub}</div>}
     </div>
   );

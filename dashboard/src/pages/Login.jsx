@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { C } from '../theme';
 import { isDesktop } from '../lib/desktop';
 import { getRuntimeServerUrl, persistServerUrl } from '../lib/env';
 import { precheckLogin } from '../lib/api/auth';
@@ -19,15 +20,22 @@ export function Login() {
   const desktop = isDesktop();
 
   async function onLogin(username, password) {
-    const office = username.toLowerCase() === 'oday' && password === 'oday';
-    if (desktop) {
-      const next = await persistServerUrl(serverUrl);
-      if (!next && !office) throw taggedError('SERVER');
+    const user = username.trim();
+    const pass = password.trim();
+    const office = user.toLowerCase() === 'oday' && pass === 'oday';
+
+    if (office) {
+      return authenticate(user, pass);
     }
 
-    if (!needOtp && !office) {
+    if (desktop) {
+      const next = await persistServerUrl(serverUrl);
+      if (!next) throw taggedError('SERVER');
+    }
+
+    if (!needOtp) {
       try {
-        const check = await precheckLogin(username);
+        const check = await precheckLogin(user);
         if (check.totp_required) {
           setNeedOtp(true);
           throw taggedError('OTP_REQUIRED');
@@ -38,7 +46,7 @@ export function Login() {
     }
 
     try {
-      return await authenticate(username, password, otp || undefined);
+      return await authenticate(user, pass, otp || undefined);
     } catch (err) {
       if (String(err?.message || '').includes('رمز التحقق')) {
         setNeedOtp(true);
@@ -49,7 +57,7 @@ export function Login() {
   }
 
   return (
-    <div className="h-full min-h-0 overflow-hidden bg-[#0a0a0a]">
+    <div className="h-full min-h-0 overflow-hidden" style={{ background: C.sidebar }}>
       <LoginScreen
         onLogin={onLogin}
         onAuthenticated={applySession}

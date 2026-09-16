@@ -23,7 +23,10 @@
         "CFBundleAllowMixedLocalizations": true,
         "CFBundleDevelopmentRegion": "ar",
         "CFBundleDisplayName": "ODAY OS",
-        "ExpoLocalization_supportsRTL": true
+        "ExpoLocalization_supportsRTL": true,
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {

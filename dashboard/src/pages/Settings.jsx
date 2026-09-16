@@ -538,7 +538,7 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
                     className="text-right rounded-2xl p-4 min-h-[5.5rem] transition-shadow"
                     style={{
                       background: C.paper,
-                      border: `1.5px solid ${selected ? C.bronze1 : C.border}`,
+                      border: `1.5px solid ${selected ? C.lime : C.border}`,
                       boxShadow: selected ? `0 0 0 3px color-mix(in srgb, ${palette.swatches[1]} 18%, transparent)` : 'none',
                     }}
                   >

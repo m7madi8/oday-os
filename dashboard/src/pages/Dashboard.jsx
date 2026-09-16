@@ -43,7 +43,7 @@ export function Dashboard({ year, hidden, onNavigate }) {
     <div className="space-y-6 sm:space-y-8 min-w-0">
       {overview.isLoading ? <LoadingBlock /> : null}
       {overview.isError ? (
-        <ErrorState message={overview.error?.message} onRetry={() => overview.refetch()} />
+        <ErrorState error={overview.error} message={overview.error?.message} onRetry={() => overview.refetch()} />
       ) : null}
 
       <div className="kpi-row">
@@ -86,13 +86,13 @@ export function Dashboard({ year, hidden, onNavigate }) {
       <section
         className="os-surface os-overview-panel p-4 sm:p-6 min-w-0"
         style={{
-          background: 'var(--paper-50)',
-          border: '1px solid var(--paper-200)',
+          background: C.paper,
+          border: `1px solid ${C.border}`,
           borderRadius: RADIUS.md,
         }}
       >
         <div className="mb-4">
-          <h3 className="text-xl" style={{ color: 'var(--black-950)', fontFamily: FONT_HEAD, fontWeight: 600 }}>
+          <h3 className="text-xl" style={{ color: C.ink, fontFamily: FONT_HEAD, fontWeight: 600 }}>
             تنبيهات وتحصيلات
           </h3>
           <p className="text-base mt-0.5" style={{ color: C.inkSoft }}>

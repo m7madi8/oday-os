@@ -1,6 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { C, FONT_HEAD } from '@/theme';
+import { C, FONT_HEAD, RADIUS } from '@/theme';
 
 export function Sheet({
   visible,
@@ -31,12 +31,12 @@ export function Sheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(18,20,26,0.35)' },
+  backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(17, 18, 16, 0.38)' },
   wrap: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: C.paper,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: RADIUS.lg,
+    borderTopRightRadius: RADIUS.lg,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '88%',

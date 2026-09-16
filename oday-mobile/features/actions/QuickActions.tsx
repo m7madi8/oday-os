@@ -104,21 +104,74 @@ function ClientForm({ disabled, onDone }: { disabled: boolean; onDone: () => voi
   );
 }
 
+function ClientModeToggle({ mode, onChange }: { mode: 'new' | 'existing'; onChange: (mode: 'new' | 'existing') => void }) {
+  return (
+    <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
+      {([
+        ['new', 'عميل جديد'],
+        ['existing', 'عميل موجود'],
+      ] as const).map(([value, label]) => {
+        const active = mode === value;
+        return (
+          <Pressable
+            key={value}
+            onPress={() => onChange(value)}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 999,
+              backgroundColor: active ? C.sidebar : C.tint,
+            }}
+          >
+            <Text style={{ color: active ? C.white : C.ink, fontFamily: FONT_BODY }}>{label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 function ProjectForm({ disabled, onDone }: { disabled: boolean; onDone: () => void }) {
   const clients = useClients();
   const [name, setName] = useState('');
+  const [clientMode, setClientMode] = useState<'new' | 'existing'>('new');
   const [clientId, setClientId] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
   const [amount, setAmount] = useState('');
   const [due, setDue] = useState('');
   const selected = clientId || clients.data?.data?.[0]?.id || '';
+  const canSave =
+    !!name &&
+    (clientMode === 'new' ? !!clientName.trim() : !!selected);
   const mutation = useMutation({
-    mutationFn: () =>
-      createProject({
+    mutationFn: async () => {
+      let resolvedClientId = selected;
+      if (clientMode === 'new') {
+        const created = await createClient({
+          name: clientName.trim(),
+          contacts: [
+            {
+              first_name: clientName.trim(),
+              email: clientEmail.trim(),
+              phone: clientPhone.trim(),
+              send_email: false,
+            },
+          ],
+        });
+        resolvedClientId = created.data.id;
+      }
+      if (!resolvedClientId) {
+        throw new ApiError('اختر العميل أو أدخل بيانات عميل جديد', 422);
+      }
+      return createProject({
         name,
-        client_id: selected,
+        client_id: resolvedClientId,
         budgeted_amount: Number(amount) || 0,
         due_date: due || undefined,
-      }),
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       onDone();
@@ -128,10 +181,22 @@ function ProjectForm({ disabled, onDone }: { disabled: boolean; onDone: () => vo
   return (
     <>
       <Field label="اسم المشروع" value={name} onChangeText={setName} />
-      <ClientPicker value={selected} onChange={setClientId} />
+      <View style={{ gap: 8 }}>
+        <Text style={{ color: C.inkSoft, fontFamily: FONT_BODY, textAlign: 'right' }}>العميل</Text>
+        <ClientModeToggle mode={clientMode} onChange={setClientMode} />
+      </View>
+      {clientMode === 'new' ? (
+        <>
+          <Field label="اسم العميل" value={clientName} onChangeText={setClientName} />
+          <Field label="هاتف العميل" value={clientPhone} onChangeText={setClientPhone} keyboardType="phone-pad" />
+          <Field label="بريد العميل" value={clientEmail} onChangeText={setClientEmail} keyboardType="email-address" autoCapitalize="none" />
+        </>
+      ) : (
+        <ClientPicker value={selected} onChange={setClientId} />
+      )}
       <Field label="قيمة المشروع" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" />
       <Field label="تاريخ الاستحقاق YYYY-MM-DD" value={due} onChangeText={setDue} />
-      <Button label="حفظ المشروع" disabled={disabled || !name || !selected} loading={mutation.isPending} onPress={() => mutation.mutate()} />
+      <Button label="حفظ المشروع والعميل" disabled={disabled || !canSave} loading={mutation.isPending} onPress={() => mutation.mutate()} />
     </>
   );
 }

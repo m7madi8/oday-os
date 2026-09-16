@@ -1,6 +1,6 @@
-import { getToken, clearSession, isLocalToken } from '../auth/session';
 import { getApiRoot } from '../env';
-import { desktop, isDesktop } from '../desktop';
+import { getToken, clearSession, isLocalToken } from '../auth/session';
+import { getDesktop, isDesktop } from '../desktop';
 
 export class ApiError extends Error {
   constructor(message, status, payload) {
@@ -8,6 +8,15 @@ export class ApiError extends Error {
     this.status = status;
     this.payload = payload;
   }
+}
+
+export function isAuthError(error) {
+  if (!error) return false;
+  if (typeof error === 'string') {
+    return /invalid token|unauthenticated|unauthoriz|expired|انتهت الجلسة|صلاحية/.test(error.toLowerCase());
+  }
+  if (error.status === 401 || error.status === 403) return true;
+  return isAuthError(error.message);
 }
 
 let onUnauthorized = null;
@@ -99,12 +108,13 @@ export async function api(path, options = {}) {
   const json = await parseBody(response);
 
   if (response.status === 401 || response.status === 403) {
-    if (!isLocalToken(token)) {
-      await clearSession();
-      onUnauthorized?.();
-      if (isDesktop() && response.status === 401) {
-        desktop.notify.show({ title: 'ODAY OS', body: 'انتهت الجلسة. سجّل الدخول مجدداً.' });
-      }
+    if (isLocalToken(token)) {
+      return options.emptyAuth ?? null;
+    }
+    await clearSession();
+    onUnauthorized?.();
+    if (isDesktop() && response.status === 401) {
+      getDesktop()?.notify?.show({ title: 'ODAY OS', body: 'انتهت الجلسة. سجّل الدخول مجدداً.' });
     }
     throw new ApiError(errorMessage(json, 'انتهت الجلسة'), response.status, json);
   }
@@ -142,10 +152,11 @@ export async function apiBlob(path, options = {}) {
 
   emitOnline(true);
   if (response.status === 401 || response.status === 403) {
-    if (!isLocalToken(token)) {
-      await clearSession();
-      onUnauthorized?.();
+    if (isLocalToken(token)) {
+      return new Blob();
     }
+    await clearSession();
+    onUnauthorized?.();
     throw new ApiError('انتهت الجلسة', response.status);
   }
   if (!response.ok) {

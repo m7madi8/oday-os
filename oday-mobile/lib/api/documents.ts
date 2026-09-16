@@ -1,6 +1,6 @@
 import { api } from '@/lib/api/client';
 import { getToken } from '@/lib/auth/session';
-import { ENV } from '@/config/env';
+import { getApiUrl } from '@/lib/server';
 import type { DocumentFile, ListResponse } from '@/types/api';
 
 export function listDocuments(params: { page?: number; per_page?: number } = {}) {
@@ -11,7 +11,7 @@ export function listDocuments(params: { page?: number; per_page?: number } = {})
 
 export async function downloadDocument(id: string) {
   const token = await getToken();
-  const response = await fetch(`${ENV.apiUrl}/api/v1/documents/${id}/download`, {
+  const response = await fetch(`${getApiUrl()}/api/v1/documents/${id}/download`, {
     headers: {
       Accept: '*/*',
       'X-API-TOKEN': token ?? '',

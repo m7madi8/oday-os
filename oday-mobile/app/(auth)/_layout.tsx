@@ -14,5 +14,5 @@ export default function AuthLayout() {
     );
   }
   if (session) return <Redirect href="/(tabs)" />;
-  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0a0a0a' } }} />;
+  return <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.sidebar } }} />;
 }

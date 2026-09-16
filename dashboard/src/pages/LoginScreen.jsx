@@ -57,6 +57,7 @@ const copy = {
 
 function resolveErrorMessage(err, t) {
   if (err?.code === 'SERVER') return t.errorServer;
+  if (err?.message) return err.message;
   return t.errorAuth;
 }
 
