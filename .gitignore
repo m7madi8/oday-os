@@ -21,6 +21,7 @@ yarn-error.log
 local_version.txt
 .env
 oday-mobile/.env
+storage/app/oday/private/
 oday-mobile/.env.local
 oday-mobile/.expo
 .phpunit.result.cache

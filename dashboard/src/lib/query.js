@@ -5,10 +5,14 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 8_000,
       gcTime: 30 * 60_000,
-      retry: 1,
+      retry: (failureCount, error) => {
+        if (error?.status === 401 || error?.status === 403) return false;
+        return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 8_000),
       refetchOnReconnect: true,
       refetchOnWindowFocus: true,
-      refetchInterval: 12_000,
+      refetchInterval: (query) => (query.state.status === 'error' ? false : 12_000),
       refetchIntervalInBackground: false,
     },
     mutations: {
@@ -28,14 +32,18 @@ export const keys = {
   invoices: (filter = '') => ['invoices', filter],
   payments: (filter = '') => ['payments', filter],
   expenses: (filter = '') => ['expenses', filter],
-  cheques: (filter = '') => ['cheques', filter],
+  cheques: (key = '') => ['cheques', key],
+  cheque: (id) => ['cheque', id],
+  chequeSummary: (direction = 'all') => ['cheque-summary', direction],
   documents: (filter = '') => ['documents', filter],
+  employees: (key = '') => ['employees', key],
+  payrollPayments: (key = '') => ['payroll-payments', key],
 };
 
 export function invalidateFinance() {
   return queryClient.invalidateQueries({
     predicate: (query) =>
-      ['overview', 'projects', 'project', 'clients', 'client', 'invoices', 'payments', 'expenses', 'cheques', 'documents'].includes(
+      ['overview', 'projects', 'project', 'clients', 'client', 'invoices', 'payments', 'expenses', 'cheques', 'cheque', 'cheque-summary', 'documents', 'employees', 'payroll-payments'].includes(
         String(query.queryKey[0]),
       ),
   });

@@ -1,0 +1,297 @@
+.cheque-preview-root {
+  --cheque-width-mm: 180;
+  --cheque-height-mm: 82;
+  --cheque-zoom: 1;
+  --print-offset-x-mm: 0mm;
+  --print-offset-y-mm: 0mm;
+  color: #242522;
+  font-family: var(--cheque-font, 'IBM Plex Sans Arabic', 'Noto Sans Arabic', sans-serif);
+}
+
+.cheque-preview-viewport {
+  overflow: auto;
+  touch-action: pan-x pan-y pinch-zoom;
+  padding: 8px;
+  min-height: 120px;
+}
+
+.cheque-preview-skeleton {
+  aspect-ratio: 180 / 82;
+  max-width: 100%;
+  background: linear-gradient(90deg, #eceae4 25%, #f5f3ee 50%, #eceae4 75%);
+  background-size: 200% 100%;
+  border-radius: 8px;
+}
+
+.cheque-preview-stage {
+  display: flex;
+  justify-content: center;
+  min-width: min-content;
+}
+
+.cheque-preview-sheet {
+  position: relative;
+  width: calc(var(--cheque-width-mm) * 1mm * var(--cheque-zoom));
+  height: calc(var(--cheque-height-mm) * 1mm * var(--cheque-zoom));
+  background: #faf8f2;
+  border: 0.2mm solid #6f716b;
+  box-sizing: border-box;
+  transform-origin: top center;
+  transition: opacity 180ms ease;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.cheque-preview-sheet.has-scan-bg {
+  background-color: #faf8f2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cheque-preview-sheet,
+  .bank-logo-img {
+    transition: none;
+  }
+}
+
+.cheque-preview--print .cheque-preview-sheet {
+  transform: translate(var(--print-offset-x-mm), var(--print-offset-y-mm));
+  box-shadow: none;
+}
+
+.cheque-preview--bank-paper .cheque-preview-sheet {
+  background: transparent !important;
+  border: none !important;
+}
+
+.cheque-preview--bank-paper .cheque-preview-decor,
+.cheque-preview--bank-paper .cheque-bank-block,
+.cheque-preview--bank-paper .cheque-bank-names,
+.cheque-preview--bank-paper .cheque-preview-corner-mark,
+.cheque-preview--bank-paper .cheque-label,
+.cheque-preview--bank-paper .cheque-filler-rule,
+.cheque-preview--bank-paper .cheque-signature-baseline {
+  visibility: hidden;
+}
+
+.cheque-preview-field {
+  position: absolute;
+  box-sizing: border-box;
+  line-height: 1.35;
+  overflow: hidden;
+}
+
+.cheque-preview-field--ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+  font-family: 'IBM Plex Sans', 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.cheque-preview-field--align-end {
+  text-align: end;
+}
+
+.cheque-preview-field--align-center {
+  text-align: center;
+}
+
+.cheque-preview-corner-mark {
+  position: absolute;
+  inset-inline-end: 3mm;
+  top: 3mm;
+  max-width: 42%;
+  font-size: 6.5pt;
+  font-weight: 600;
+  color: rgba(90, 50, 40, 0.55);
+  text-align: end;
+  line-height: 1.2;
+  pointer-events: none;
+  transform: rotate(-8deg);
+}
+
+.cheque-label {
+  color: #6f716b;
+  font-weight: 600;
+  margin-inline-end: 1.5mm;
+}
+
+.cheque-label-inline {
+  font-size: 7pt;
+}
+
+.cheque-date-boxes {
+  display: inline-flex;
+  align-items: center;
+  gap: 1mm;
+  font-variant-numeric: tabular-nums;
+}
+
+.cheque-date-cell {
+  display: inline-block;
+  min-width: 6mm;
+  padding: 0.5mm 1mm;
+  border: 0.15mm solid #9a9c95;
+  text-align: center;
+  background: #fff;
+}
+
+.cheque-date-sep {
+  opacity: 0.6;
+}
+
+.cheque-pay-line,
+.cheque-amount-words {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1mm;
+  row-gap: 0.5mm;
+}
+
+.cheque-payee-name {
+  font-weight: 600;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.cheque-filler-rule {
+  flex: 1 1 8mm;
+  min-width: 8mm;
+  border-bottom: 0.15mm dashed #9a9c95;
+  height: 0;
+  align-self: flex-end;
+  margin-bottom: 1mm;
+}
+
+.cheque-amount-words-text {
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+
+.cheque-amount-words.is-clamped .cheque-amount-words-text {
+  outline: 0.2mm dashed #b45f55;
+}
+
+.cheque-amount-box {
+  border: 0.25mm solid #3d3d3d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1mm;
+  background: #fff;
+}
+
+.cheque-currency-label {
+  font-size: 7pt;
+  color: #6f716b;
+}
+
+.cheque-amount-value {
+  font-weight: 700;
+  font-size: 1.05em;
+}
+
+.cheque-signature {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.cheque-signature-label {
+  font-size: 7.5pt;
+  color: #6f716b;
+  margin-bottom: 1mm;
+}
+
+.cheque-signature-baseline {
+  border-top: 0.15mm solid #6f716b;
+  min-height: 6mm;
+}
+
+.bank-logo-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.bank-logo-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.bank-logo-img.is-loaded {
+  opacity: 1;
+}
+
+.bank-logo--mono .bank-logo-img.is-loaded {
+  filter: grayscale(1);
+}
+
+.bank-logo-monogram-ring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  border: 0.2mm solid #6f716b;
+  font-weight: 700;
+  font-size: 10pt;
+}
+
+.bank-logo-caption-ar {
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.bank-logo-caption-en {
+  color: #6f716b;
+  font-size: 0.92em;
+  line-height: 1.2;
+}
+
+.cheque-preview-scan {
+  margin-top: 12px;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+@media print {
+  @page {
+    size: calc(var(--cheque-width-mm) * 1mm) calc(var(--cheque-height-mm) * 1mm);
+    margin: 0;
+  }
+
+  body.cheque-print-mode * {
+    visibility: hidden;
+  }
+
+  body.cheque-print-mode .cheque-preview-print-root,
+  body.cheque-print-mode .cheque-preview-print-root * {
+    visibility: visible;
+  }
+
+  body.cheque-print-mode .cheque-preview-print-root {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .cheque-preview--print .cheque-preview-sheet {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .cheque-preview--bank-paper .has-scan-bg {
+    background-image: none !important;
+  }
+}

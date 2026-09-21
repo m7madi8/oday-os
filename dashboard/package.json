@@ -1,7 +1,7 @@
 {
   "name": "oday-os",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ODAY OS — نظام إدارة مكتب عدي أبو ضحى المعماري",
   "author": "عدي أبو ضحى (Oday Abu Doha)",
   "license": "UNLICENSED",
@@ -13,7 +13,9 @@
     "preview": "vite preview --host 0.0.0.0 --port 5173",
     "desktop:dev": "cross-env ODAY_DESKTOP=1 vite --host 0.0.0.0 --port 5173",
     "desktop:build": "cross-env ODAY_DESKTOP=1 CSC_IDENTITY_AUTO_DISCOVERY=false vite build && electron-builder --win nsis --publish never && node scripts/publish-desktop-updates.cjs",
-    "desktop:build:mac": "cross-env ODAY_DESKTOP=1 vite build && electron-builder --mac dmg --publish never && node scripts/publish-desktop-updates.cjs"
+    "desktop:build:mac": "cross-env ODAY_DESKTOP=1 vite build && electron-builder --mac dmg --publish never && node scripts/publish-desktop-updates.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
@@ -33,6 +35,11 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2",
     "vite": "^5.4.19",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.6.1",
+    "happy-dom": "^17.4.4",
+    "vitest": "^3.0.9",
     "vite-plugin-electron": "^0.28.8",
     "vite-plugin-electron-renderer": "^0.14.6"
   },

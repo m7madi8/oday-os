@@ -11,7 +11,6 @@ import {
   Menu,
   ScrollText,
   Search,
-  Sparkles,
   Users,
   X,
 } from 'lucide-react';
@@ -91,7 +90,11 @@ export function TopBar({
   const debounced = useDebounced(query.trim());
   const canFetch = debounced.length >= 2 && searchOpen;
 
-  const overview = useQuery({ queryKey: keys.overview, queryFn: fetchOverview });
+  const overview = useQuery({
+    queryKey: keys.overview,
+    queryFn: fetchOverview,
+    refetchInterval: (query) => (query.state.status === 'error' ? false : 12_000),
+  });
   const alerts = overview.data?.alerts || [];
 
   const pages = useMemo(() => flattenNavItems(navGroups), [navGroups]);
@@ -305,15 +308,6 @@ export function TopBar({
             ) : null}
           </div>
 
-          <button
-            type="button"
-            className={`os-topbar-ai ${page === 'ai-assistant' ? 'is-active' : ''}`}
-            onClick={() => go('ai-assistant')}
-            aria-current={page === 'ai-assistant' ? 'page' : undefined}
-          >
-            <Sparkles size={16} strokeWidth={ICON} aria-hidden="true" />
-            <span>مساعد ODAY</span>
-          </button>
         </div>
       </div>
     </header>

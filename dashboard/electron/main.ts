@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { applyWindowSecurity, hardenSession } from './security';
 import { registerStoreIpc } from './ipc/store';
 import { registerFilesIpc } from './ipc/files';
+import { registerBackupIpc } from './ipc/backup';
 import { registerShellIpc } from './ipc/shell';
 import { registerNotifyIpc } from './ipc/notify';
 import { registerPrintIpc } from './ipc/print';
@@ -152,6 +153,7 @@ app.whenReady().then(async () => {
   }
   registerStoreIpc();
   registerFilesIpc();
+  registerBackupIpc();
   registerShellIpc();
   registerNotifyIpc();
   registerPrintIpc();

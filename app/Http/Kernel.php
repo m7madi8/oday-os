@@ -138,6 +138,7 @@ class Kernel extends HttpKernel
         'can' => Authorize::class,
         'cors' => Cors::class,
         'oday.token' => OdayDashboardAuth::class,
+        'cron.secret' => \App\Http\Middleware\VerifyCronSecret::class,
         'guest' => RedirectIfAuthenticated::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'protected_download.signature' => ValidateProtectedDownloadSignature::class,

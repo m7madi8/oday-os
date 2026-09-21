@@ -1,0 +1,25 @@
+# Local MySQL for ODAY / Invoice Ninja (matches default .env DB_*).
+# Usage: docker compose up -d
+# Then: php artisan migrate --force  (or open /setup once)
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ninja
+      MYSQL_USER: ninja
+      MYSQL_PASSWORD: ninja
+      MYSQL_ROOT_PASSWORD: ninja_root
+    volumes:
+      - oday_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uninja", "-pninja"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  oday_mysql_data:

@@ -251,6 +251,10 @@ class Handler extends ExceptionHandler
             return response()->json(['message' => $exception->getMessage()], 400);
         } elseif ($exception instanceof StripeConnectFailure) {
             return response()->json(['message' => $exception->getMessage()], 400);
+        } elseif ($request->expectsJson() && $this->isDatabaseConnectionFailure($exception)) {
+            return response()->json([
+                'message' => 'تعذر الاتصال بقاعدة البيانات. شغّل MySQL على المنفذ 3306 وتأكد من إعدادات DB_HOST وDB_DATABASE في ملف .env.',
+            ], 503);
         }
 
         return parent::render($request, $exception);
@@ -283,5 +287,24 @@ class Handler extends ExceptionHandler
         }
 
         return redirect()->guest(route($login));
+    }
+
+    private function isDatabaseConnectionFailure(Throwable $exception): bool
+    {
+        $current = $exception;
+        while ($current !== null) {
+            if ($current instanceof QueryException || $current instanceof PDOException) {
+                $message = $current->getMessage();
+                if (str_contains($message, '2002')
+                    || str_contains($message, 'actively refused')
+                    || str_contains($message, 'Connection refused')
+                    || str_contains($message, 'could not find driver')) {
+                    return true;
+                }
+            }
+            $current = $current->getPrevious();
+        }
+
+        return false;
     }
 }

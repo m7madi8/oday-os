@@ -14,7 +14,7 @@ import { showToast } from '../lib/toast';
 import { todayIso } from '../lib/labels';
 import { C } from '../theme';
 
-export function Projects({ hidden }) {
+export function Projects({ hidden, onOpenProject }) {
   const { session } = useAuth();
   const [filter, setFilter] = useState('');
   const [open, setOpen] = useState(false);
@@ -99,6 +99,7 @@ export function Projects({ hidden }) {
         columns={columns}
         emptyTitle="لا مشاريع بعد"
         emptyBody="أنشئ مشروعاً هنا ليظهر فوراً في الويب والجوال من نفس قاعدة البيانات."
+        onRowClick={onOpenProject ? (row) => onOpenProject(row.id) : undefined}
       />
       <Sheet open={open} title="إضافة مشروع" onClose={() => setOpen(false)}>
         <Field label="اسم المشروع">

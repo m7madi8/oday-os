@@ -236,6 +236,7 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapShopApiRoutes();
 
         $this->mapOdayRoutes();
+        $this->mapBackupRoutes();
     }
 
     /**
@@ -304,6 +305,12 @@ class RouteServiceProvider extends ServiceProvider
     {
         Route::middleware([])
             ->group(base_path('routes/oday.php'));
+    }
+
+    protected function mapBackupRoutes()
+    {
+        Route::middleware([])
+            ->group(base_path('routes/backup.php'));
     }
 
     protected function mapVendorsApiRoutes()

@@ -58,11 +58,11 @@ export function QuickNotes() {
         animationDelay: '420ms',
       }}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-3 mb-3">
+      <div className="flex items-center justify-between gap-3 mb-2">
         <h3 style={{ color: C.ink, fontFamily: FONT_HEAD, fontSize: 22, fontWeight: 600 }}>
           مذكّرات المكتب
         </h3>
-        <div className="flex items-center gap-1 shrink-0" style={{ color: C.inkSoft, fontSize: '1rem' }} aria-live="polite">
+        <div className="flex items-center gap-1 shrink-0" style={{ color: C.inkSoft, fontSize: '0.875rem' }} aria-live="polite">
           {status === 'saving' && (
             <>
               <Loader2 size={16} strokeWidth={1.5} className="animate-spin" aria-hidden="true" />
@@ -81,15 +81,11 @@ export function QuickNotes() {
         ref={areaRef}
         value={notes}
         onChange={handleChange}
-        placeholder="متابعة مواقع، مواعيد تسليم مخططات، أو ملاحظات اجتماعات العملاء..."
         rows={3}
         disabled={!loaded}
-        aria-label="ملاحظات سريعة"
+        aria-label="مذكّرات المكتب"
         className="os-notes-area"
       />
-      <p className="mt-2 text-start" style={{ color: C.inkSoft, fontSize: '1rem' }}>
-        محفوظة أونلاين وتظهر من الجوال أو المكتب بعد الحفظ
-      </p>
     </section>
   );
 }

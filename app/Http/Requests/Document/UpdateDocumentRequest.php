@@ -37,6 +37,7 @@ class UpdateDocumentRequest extends Request
         return [
             'name' => 'sometimes',
             'is_public' => 'sometimes|boolean',
+            'custom_value1' => 'sometimes|nullable|string|max:64',
         ];
     }
 

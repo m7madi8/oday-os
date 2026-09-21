@@ -58,6 +58,11 @@ use App\Http\Controllers\MailerController;
 use App\Http\Controllers\MailgunController;
 use App\Http\Controllers\MigrationController;
 use App\Http\Controllers\OneTimeTokenController;
+use App\Http\Controllers\Oday\ChequeController;
+use App\Http\Controllers\Oday\ChequeBankLogoController;
+use App\Http\Controllers\Oday\ChequePrintCalibrationController;
+use App\Http\Controllers\Oday\ChequeTemplateOverrideController;
+use App\Http\Controllers\Oday\EmployeeController;
 use App\Http\Controllers\PasskeyController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentNotificationWebhookController;
@@ -328,6 +333,24 @@ Route::group(['middleware' => ['throttle:api', 'token_auth', 'valid_json','local
     Route::post('logout', [LogoutController::class, 'index'])->name('logout');
 
     Route::post('one_time_token', [OneTimeTokenController::class, 'create']);
+
+    Route::get('cheques/print_calibration', [ChequePrintCalibrationController::class, 'show'])->name('cheques.print_calibration.show');
+    Route::put('cheques/print_calibration', [ChequePrintCalibrationController::class, 'update'])->name('cheques.print_calibration.update');
+    Route::get('cheques/bank_logos', [ChequeBankLogoController::class, 'index'])->name('cheques.bank_logos.index');
+    Route::post('cheques/bank_logos', [ChequeBankLogoController::class, 'store'])->name('cheques.bank_logos.store');
+    Route::delete('cheques/bank_logos/{bankId}', [ChequeBankLogoController::class, 'destroy'])->name('cheques.bank_logos.destroy');
+    Route::get('cheques/templates/{bankId}', [ChequeTemplateOverrideController::class, 'show'])->name('cheques.templates.show');
+    Route::put('cheques/templates/{bankId}', [ChequeTemplateOverrideController::class, 'update'])->name('cheques.templates.update');
+    Route::post('cheques/templates/{bankId}/verify', [ChequeTemplateOverrideController::class, 'verify'])->name('cheques.templates.verify');
+    Route::get('cheques/summary', [ChequeController::class, 'summary'])->name('cheques.summary');
+    Route::get('cheques/invoice_balance/{invoice}', [ChequeController::class, 'invoiceBalance'])->name('cheques.invoice_balance');
+    Route::post('cheques/{cheque}/transition', [ChequeController::class, 'transition'])->name('cheques.transition');
+    Route::resource('cheques', ChequeController::class)->except(['create', 'edit']);
+
+    Route::get('payroll/summary', [EmployeeController::class, 'summary'])->name('payroll.summary');
+    Route::get('payroll/payments', [EmployeeController::class, 'payments'])->name('payroll.payments');
+    Route::post('employees/{employee}/pay', [EmployeeController::class, 'pay'])->name('employees.pay');
+    Route::resource('employees', EmployeeController::class)->except(['create', 'edit']);
 
     Route::resource('payments', PaymentController::class); // name = (payments. index / create / show / update / destroy / edit
     Route::post('payments/refund', [PaymentController::class, 'refund'])->name('payments.refund');

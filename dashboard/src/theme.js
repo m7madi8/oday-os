@@ -59,18 +59,18 @@ export const MONTHS_SHORT = [
 ];
 
 export const PAGE_META = {
-  dashboard: { title: 'نظرة عامة' },
-  projects: { title: 'المشاريع' },
-  clients: { title: 'العملاء' },
-  documents: { title: 'المستندات' },
-  invoices: { title: 'الفواتير' },
-  payments: { title: 'الدفعات' },
-  checks: { title: 'الشيكات' },
-  expenses: { title: 'المصاريف' },
-  payroll: { title: 'الرواتب' },
-  reports: { title: 'التقارير' },
-  'ai-assistant': { title: 'المساعد الذكي' },
-  settings: { title: 'الإعدادات' },
+  dashboard: { title: 'اليوم', subtitle: 'ما يحتاج متابعته الآن' },
+  projects: { title: 'المشاريع', subtitle: 'أعمال المكتب الحالية' },
+  clients: { title: 'العملاء', subtitle: 'جهات التواصل والأرصدة' },
+  documents: { title: 'ملفات المشاريع', subtitle: 'مخططات، عقود، ومرفقات' },
+  invoices: { title: 'فواتير العملاء', subtitle: 'ما لم يُدفع بعد' },
+  payments: { title: 'تحصيل من العملاء', subtitle: 'دفعات واردة مسجّلة' },
+  checks: { title: 'الشيكات', subtitle: 'إدارة ومتابعة الشيكات الواردة والصادرة وحالات استحقاقها.' },
+  expenses: { title: 'مصروف المكتب', subtitle: 'مصاريف تشغيلية' },
+  payroll: { title: 'رواتب الفريق', subtitle: 'تعريف الموظفين وصرف رواتبهم' },
+  reports: { title: 'التقارير', subtitle: 'ملخص مالي للمكتب' },
+  'ai-assistant': { title: 'المساعد الذكي', subtitle: 'قريبًا' },
+  settings: { title: 'الإعدادات', subtitle: 'هوية المكتب والنظام' },
 };
 
 export const CURRENCIES = {

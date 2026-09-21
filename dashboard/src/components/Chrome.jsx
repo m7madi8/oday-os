@@ -3,7 +3,7 @@ import { ChevronDown, MoreHorizontal, X } from 'lucide-react';
 import { C, FONT_SERIF, RADIUS } from '../theme';
 import { BrandLogo } from './BrandLogo';
 import { BRAND } from '../brand';
-import { FINANCE_PAGE_IDS, mobileTabItems } from '../lib/navigation';
+import { mobileTabItems } from '../lib/navigation';
 
 export { TopBar } from './TopBar';
 
@@ -162,15 +162,8 @@ export function Sidebar({
 }) {
   const touchStartX = useRef(null);
   const closeTimer = useRef(null);
-  const [expanded, setExpanded] = useState({ المالية: false });
-  const [closing, setClosing] = useState({ المالية: false });
-
-  useEffect(() => {
-    if (FINANCE_PAGE_IDS.includes(active)) {
-      setExpanded((prev) => ({ ...prev, المالية: true }));
-      setClosing((prev) => ({ ...prev, المالية: false }));
-    }
-  }, [active]);
+  const [expanded, setExpanded] = useState({});
+  const [closing, setClosing] = useState({});
 
   useEffect(() => () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -290,7 +283,7 @@ export function Sidebar({
             const isCollapsible = Boolean(group.collapsible);
             const isOpen = isCollapsible ? expanded[group.title] : true;
             const isClosing = isCollapsible ? closing[group.title] : false;
-            const financeActive = isCollapsible && FINANCE_PAGE_IDS.includes(active);
+            const financeActive = false;
 
             return (
               <div key={group.title}>

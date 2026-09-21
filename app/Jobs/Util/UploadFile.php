@@ -115,6 +115,10 @@ class UploadFile implements ShouldQueue
         $document->height = $height ?? null;
         $document->is_public = $this->is_public;
 
+        if ($this->entity instanceof \App\Models\Project) {
+            $document->project_id = $this->entity->id;
+        }
+
         // $preview_path = $this->encodePrimaryKey($this->company->id);
         // $document->preview = $this->generatePreview($preview_path);
 

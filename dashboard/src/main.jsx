@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
+import { AppErrorBoundary } from './components/AppErrorBoundary.jsx';
 import { AppProviders } from './lib/auth/AuthProvider.jsx';
 import './index.css';
 
@@ -14,8 +15,10 @@ if (isElectron) {
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AppProviders>
-      <App />
-    </AppProviders>
+    <AppErrorBoundary>
+      <AppProviders>
+        <App />
+      </AppProviders>
+    </AppErrorBoundary>
   </React.StrictMode>,
 );

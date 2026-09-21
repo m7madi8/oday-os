@@ -118,12 +118,22 @@ export function invoiceStatusLabel(statusId?: number) {
 
 export function chequeStatusLabel(status?: string) {
   switch (status) {
+    case 'received':
     case 'pending':
-      return 'معلّق';
+      return 'مستلم';
     case 'deposited':
       return 'مودع';
+    case 'processing':
+      return 'قيد التحصيل';
+    case 'draft':
+      return 'مسودة';
+    case 'printed':
+      return 'مطبوع';
+    case 'delivered':
+      return 'مُسلَّم';
     case 'cleared':
-      return 'مقبوض';
+      return 'مصروف';
+    case 'returned':
     case 'bounced':
       return 'مرتجع';
     case 'cancelled':

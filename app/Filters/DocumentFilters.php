@@ -12,7 +12,9 @@
 
 namespace App\Filters;
 
+use App\Models\Client;
 use App\Models\Company;
+use App\Models\Project;
 use App\Filters\QueryFilters;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -35,8 +37,44 @@ class DocumentFilters extends QueryFilters
             return $this->builder;
         }
 
-        return $this->builder->where('name', 'like', '%' . $filter . '%');
+        $term = '%' . $filter . '%';
 
+        return $this->builder->where(function ($query) use ($term) {
+            $query->where('name', 'like', $term)
+                ->orWhereHasMorph('documentable', [Project::class], function ($project_query) use ($term) {
+                    $project_query->where('name', 'like', $term);
+                })
+                ->orWhereHasMorph('documentable', [Client::class], function ($client_query) use ($term) {
+                    $client_query->where('name', 'like', $term);
+                });
+        });
+
+    }
+
+    public function project_id(string $project_id = ''): Builder
+    {
+        if (strlen($project_id) == 0) {
+            return $this->builder;
+        }
+
+        $id = $this->decodePrimaryKey($project_id);
+
+        return $this->builder->where(function ($query) use ($id) {
+            $query->where('project_id', $id)
+                ->orWhere(function ($morph) use ($id) {
+                    $morph->where('documentable_type', Project::class)
+                        ->where('documentable_id', $id);
+                });
+        });
+    }
+
+    public function category(string $category = ''): Builder
+    {
+        if (strlen($category) == 0 || $category === 'all') {
+            return $this->builder;
+        }
+
+        return $this->builder->where('custom_value1', $category);
     }
 
     /**

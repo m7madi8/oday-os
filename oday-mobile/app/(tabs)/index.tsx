@@ -12,6 +12,7 @@ import { ActionChip, Card, EmptyState, ErrorState, LoadingBlock, OfflineBanner, 
 import { FinanceCard, StatCard, Surface } from '@/components/ui/Cards';
 import { ScreenShell } from '@/components/ui/Chrome';
 import { QuickActions, type QuickKind } from '@/features/actions/QuickActions';
+import { timeGreeting } from '@/lib/greeting';
 import { can, displayName } from '@/lib/permissions';
 
 export default function HomeScreen() {
@@ -25,7 +26,7 @@ export default function HomeScreen() {
   const data = overview.data;
 
   return (
-    <ScreenShell title="نظرة عامة">
+    <ScreenShell title="اليوم">
       <OfflineBanner visible={offline} />
       <ScrollView
         contentContainerStyle={styles.content}
@@ -33,7 +34,9 @@ export default function HomeScreen() {
       >
         <View style={styles.hero}>
           <Text style={styles.kicker}>{office.data?.settings.officeName || session?.company.name || 'ODAY OS'}</Text>
-          <Text style={styles.hello}>مرحباً، {displayName(session?.user)}</Text>
+          <Text style={styles.hello}>
+            {timeGreeting()}، {session?.user?.first_name?.trim() || displayName(session?.user).split(/\s+/)[0]}
+          </Text>
         </View>
 
         {overview.isLoading ? <LoadingBlock /> : null}
@@ -42,10 +45,10 @@ export default function HomeScreen() {
         {data ? (
           <>
             <View style={styles.statGrid}>
-              <StatCard icon={CircleDollarSign} label="مستحقات" value={money(data.kpis.receivables, symbol)} onPress={() => router.push('/finance/invoices')} />
-              <StatCard icon={ScrollText} label="شيكات قادمة" value={count(data.kpis.upcoming_cheques_count)} onPress={() => router.push('/finance/cheques')} />
+              <StatCard icon={CircleDollarSign} label="لم يُدفع بعد" value={money(data.kpis.receivables, symbol)} onPress={() => router.push('/finance/invoices')} />
+              <StatCard icon={ScrollText} label="شيكات قريبة" value={count(data.kpis.upcoming_cheques_count)} onPress={() => router.push('/finance/cheques')} />
               <StatCard icon={FolderKanban} label="مشاريع نشطة" value={count(data.kpis.active_projects)} onPress={() => router.push('/(tabs)/projects')} />
-              <StatCard icon={Banknote} label="دفعات قادمة" value={count(data.kpis.upcoming_payments_count)} onPress={() => router.push('/finance/payments')} />
+              <StatCard icon={Banknote} label="تحصيل قادم" value={count(data.kpis.upcoming_payments_count)} onPress={() => router.push('/finance/payments')} />
             </View>
 
             <View style={styles.financeRow}>

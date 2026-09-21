@@ -130,7 +130,7 @@ class OdayAiService
         $chequesDue = OdayCheque::query()
             ->where('company_id', $companyId)
             ->where('is_deleted', false)
-            ->whereIn('status', [OdayCheque::STATUS_PENDING, OdayCheque::STATUS_DEPOSITED])
+            ->whereIn('status', [OdayCheque::STATUS_RECEIVED, OdayCheque::STATUS_DEPOSITED, OdayCheque::STATUS_PROCESSING])
             ->orderBy('due_date')
             ->limit(8)
             ->get();

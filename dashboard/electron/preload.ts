@@ -45,6 +45,12 @@ const oday = {
     pdf: (payload: { data: string; name?: string }) => ipcRenderer.invoke('oday:print:pdf', payload) as Promise<boolean>,
     open: (payload: { data: string; name?: string }) => ipcRenderer.invoke('oday:print:open', payload) as Promise<boolean>,
   },
+  backup: {
+    pickFolder: () => ipcRenderer.invoke('oday:backup:pick-folder') as Promise<{ path: string; label: string } | null>,
+    testFolder: (folder: string) => ipcRenderer.invoke('oday:backup:test-folder', folder) as Promise<{ ok: boolean; path: string }>,
+    writeFile: (payload: { folder: string; name: string; data: string }) =>
+      ipcRenderer.invoke('oday:backup:write-file', payload) as Promise<{ ok: boolean; path: string }>,
+  },
 };
 
 contextBridge.exposeInMainWorld('oday', oday);

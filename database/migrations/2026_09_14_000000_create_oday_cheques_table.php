@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('bank_name', 120)->nullable();
             $table->decimal('amount', 20, 6)->default(0);
             $table->date('due_date')->nullable();
-            $table->string('status', 24)->default('pending');
+            $table->string('status', 24)->default('received');
             $table->text('notes')->nullable();
             $table->boolean('is_deleted')->default(false);
             $table->timestamps(6);

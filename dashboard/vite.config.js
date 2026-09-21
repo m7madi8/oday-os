@@ -45,6 +45,11 @@ export default defineConfig(async ({ command, mode }) => {
 
   return {
     plugins,
+    test: {
+      environment: 'happy-dom',
+      setupFiles: ['./src/test/setup.js'],
+      include: ['src/**/*.test.{js,jsx}'],
+    },
     base: isDesktop && command === 'build' ? './' : '/',
     server: {
       port: 5173,

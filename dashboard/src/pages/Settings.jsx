@@ -19,6 +19,9 @@ import { CheckRow, Field, SectionCard, Segmented, SelectInput, TextArea, TextInp
 import { COUNTRY_CODES, createId } from '../lib/officeSettings';
 import { exchangeLabels, fetchOfficeRates } from '../lib/frankfurter';
 import { getItem, setItem } from '../lib/storage';
+import { BackupPanel } from '../components/backup/BackupPanel';
+import { ChequePrintCalibrationFields } from '../components/cheques/ChequePrintCalibrationFields';
+import { ChequeBankLogosPanel } from '../components/cheques/ChequeBankLogosPanel';
 
 const TOC = [
   { id: 'identity', label: 'بيانات المكتب' },
@@ -70,6 +73,13 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
       if (el) observer.observe(el);
     });
     return () => observer.disconnect();
+  }, [loaded]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('section') === 'backup') {
+      scrollToSection('backup');
+    }
   }, [loaded]);
 
   const settingsRef = useRef(settings);
@@ -466,6 +476,9 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
                 />
               </Field>
             </div>
+
+            <ChequeBankLogosPanel />
+            <ChequePrintCalibrationFields />
 
             <div className="mt-5 rounded-2xl p-4" style={{ background: C.paper, border: `1px solid ${C.border}` }}>
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -930,9 +943,10 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
             id="backup"
             num={9}
             title="النسخ والاستيراد"
-            hint="صدّر نسخة كاملة من بيانات المكتب أو استرجعها من ملف محفوظ على جهازك."
+            hint="نسخ احتياطي مشفّر إلى Google Drive ومجلد محلي، مع تصدير JSON سريع للإعدادات."
           >
-            <div className="flex flex-wrap gap-2">
+            <BackupPanel />
+            <div className="flex flex-wrap gap-2 mt-5">
               <button
                 type="button"
                 onClick={exportBackup}
@@ -963,7 +977,7 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
               />
             </div>
             <p className="text-[12px] mt-3" style={{ color: C.inkFaint }}>
-              الملف يبقى عندك. لا توجد مزامنة سحابية في هذا القسم.
+              تصدير JSON أدناه للإعدادات السريعة فقط — النسخ الرسمي المشفّر أعلاه.
             </p>
             {importError && (
               <p className="text-[12px] mt-2" style={{ color: C.burgundy }} role="alert">

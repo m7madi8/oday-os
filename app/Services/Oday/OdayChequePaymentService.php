@@ -25,7 +25,7 @@ class OdayChequePaymentService
             return $cheque;
         }
 
-        if ($cheque->direction === OdayCheque::DIRECTION_IN && $cheque->client_id) {
+        if (in_array($cheque->direction, [OdayCheque::DIRECTION_INCOMING, OdayCheque::DIRECTION_IN], true) && $cheque->client_id) {
             $payment = PaymentFactory::create(
                 $user->companyId(),
                 $user->id,
@@ -33,7 +33,7 @@ class OdayChequePaymentService
             );
 
             $payload = [
-                'amount' => (float) $cheque->amount,
+                'amount' => (float) $cheque->amountForApi(),
                 'client_id' => (int) $cheque->client_id,
                 'date' => Carbon::now()->format('Y-m-d'),
                 'type_id' => PaymentType::CHECK,

@@ -116,17 +116,35 @@ export type Cheque = {
   direction: 'in' | 'out';
   number: string;
   bank_name: string;
-  amount: number;
+  amount: string;
+  currency_code: 'ILS' | 'USD' | 'JOD';
   due_date: string;
-  status: 'pending' | 'deposited' | 'cleared' | 'bounced' | 'cancelled';
+  status:
+    | 'received'
+    | 'deposited'
+    | 'processing'
+    | 'draft'
+    | 'printed'
+    | 'delivered'
+    | 'cleared'
+    | 'returned'
+    | 'cancelled';
+  status_reason?: string;
+  is_overdue?: boolean;
   notes: string;
   client_id: string;
+  vendor_id?: string;
+  payee_name?: string;
   invoice_id: string;
   payment_id: string;
   client_name: string;
+  vendor_name?: string;
 };
 
 export type DocumentFile = {
+  project_id?: HashedId;
+  client_id?: HashedId;
+  category?: string;
   id: HashedId;
   name?: string;
   type?: string;

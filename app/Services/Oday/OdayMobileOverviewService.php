@@ -62,7 +62,13 @@ class OdayMobileOverviewService
         $upcomingCheques = OdayCheque::query()
             ->where('company_id', $companyId)
             ->where('is_deleted', false)
-            ->whereIn('status', [OdayCheque::STATUS_PENDING, OdayCheque::STATUS_DEPOSITED])
+            ->whereIn('status', [
+                OdayCheque::STATUS_RECEIVED,
+                OdayCheque::STATUS_DEPOSITED,
+                OdayCheque::STATUS_PROCESSING,
+                OdayCheque::STATUS_PRINTED,
+                OdayCheque::STATUS_DELIVERED,
+            ])
             ->whereNotNull('due_date')
             ->whereDate('due_date', '>=', $today)
             ->whereDate('due_date', '<=', $horizon)
@@ -103,7 +109,7 @@ class OdayMobileOverviewService
         $bounced = OdayCheque::query()
             ->where('company_id', $companyId)
             ->where('is_deleted', false)
-            ->where('status', OdayCheque::STATUS_BOUNCED)
+            ->where('status', OdayCheque::STATUS_RETURNED)
             ->orderByDesc('updated_at')
             ->limit(5)
             ->get();
@@ -111,7 +117,7 @@ class OdayMobileOverviewService
         foreach ($bounced as $cheque) {
             $alerts[] = [
                 'id' => 'bounced-'.$cheque->hashed_id,
-                'type' => 'cheque_bounced',
+                'type' => 'cheque_returned',
                 'title' => 'شيك مرتجع',
                 'body' => 'شيك رقم '.$cheque->number.' بحاجة إلى متابعة',
                 'amount' => (float) $cheque->amount,

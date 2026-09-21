@@ -28,7 +28,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'الرئيسية', tabBarIcon: ({ color }) => <LayoutDashboard color={color} size={18} strokeWidth={1.8} /> }}
+        options={{ title: 'اليوم', tabBarIcon: ({ color }) => <LayoutDashboard color={color} size={18} strokeWidth={1.8} /> }}
       />
       <Tabs.Screen
         name="projects"
@@ -40,7 +40,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="finance"
-        options={{ title: 'المالية', tabBarIcon: ({ color }) => <Wallet color={color} size={18} strokeWidth={1.8} /> }}
+        options={{ title: 'المال', tabBarIcon: ({ color }) => <Wallet color={color} size={18} strokeWidth={1.8} /> }}
       />
       <Tabs.Screen
         name="more"

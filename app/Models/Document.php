@@ -74,6 +74,8 @@ class Document extends BaseModel
         'is_default',
         'is_public',
         'name',
+        'custom_value1',
+        'project_id',
     ];
 
     /**
@@ -168,6 +170,33 @@ class Document extends BaseModel
     public function documentable(): \Illuminate\Database\Eloquent\Relations\MorphTo
     {
         return $this->morphTo()->withTrashed();
+    }
+
+    public function resolvedProjectId(): ?int
+    {
+        if ($this->project_id) {
+            return (int) $this->project_id;
+        }
+
+        if ($this->documentable_type === Project::class) {
+            return (int) $this->documentable_id;
+        }
+
+        return null;
+    }
+
+    public function resolvedClientId(): ?int
+    {
+        $project_id = $this->resolvedProjectId();
+        if ($project_id) {
+            return (int) (Project::withTrashed()->find($project_id)?->client_id ?? 0) ?: null;
+        }
+
+        if ($this->documentable_type === Client::class) {
+            return (int) $this->documentable_id;
+        }
+
+        return null;
     }
 
     public function user()

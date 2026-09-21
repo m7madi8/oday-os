@@ -67,8 +67,30 @@ async function parseBody(response) {
   }
 }
 
-function errorMessage(json, fallback) {
-  if (json && typeof json === 'object' && json.message) return String(json.message);
+function firstValidationMessage(errors) {
+  if (!errors || typeof errors !== 'object') return '';
+  for (const value of Object.values(errors)) {
+    if (Array.isArray(value) && value[0]) return String(value[0]);
+    if (value) return String(value);
+  }
+  return '';
+}
+
+function errorMessage(json, fallback, status) {
+  if (json && typeof json === 'object') {
+    const validation = firstValidationMessage(json.errors);
+    if (validation) return validation;
+    if (json.message) return String(json.message);
+    if (json.error) return String(json.error);
+  }
+  if (typeof json === 'string' && json.trim()) return json.trim();
+  if (status === 0) return 'تعذر الاتصال بالخادم. تحقق من تشغيل Laravel على المنفذ 8000.';
+  if (status === 503) {
+    return 'تعذر الاتصال بقاعدة البيانات. شغّل MySQL على المنفذ 3306 وتحقق من إعدادات DB في .env.';
+  }
+  if (status >= 500) {
+    return 'الخادم غير متاح أو تعذر معالجة الطلب. شغّل Laravel (php artisan serve --port=8000) وقاعدة البيانات.';
+  }
   return fallback;
 }
 
@@ -101,7 +123,7 @@ export async function api(path, options = {}) {
     });
   } catch {
     emitOnline(false);
-    throw new ApiError('تعذر الاتصال بالخادم', 0);
+    throw new ApiError(errorMessage(null, 'تعذر الاتصال بالخادم', 0), 0);
   }
 
   emitOnline(true);
@@ -116,11 +138,11 @@ export async function api(path, options = {}) {
     if (isDesktop() && response.status === 401) {
       getDesktop()?.notify?.show({ title: 'ODAY OS', body: 'انتهت الجلسة. سجّل الدخول مجدداً.' });
     }
-    throw new ApiError(errorMessage(json, 'انتهت الجلسة'), response.status, json);
+    throw new ApiError(errorMessage(json, 'انتهت الجلسة', response.status), response.status, json);
   }
 
   if (!response.ok) {
-    throw new ApiError(errorMessage(json, 'تعذر إكمال الطلب'), response.status, json);
+    throw new ApiError(errorMessage(json, 'تعذر إكمال الطلب', response.status), response.status, json);
   }
 
   return json;
@@ -147,7 +169,7 @@ export async function apiBlob(path, options = {}) {
     });
   } catch {
     emitOnline(false);
-    throw new ApiError('تعذر الاتصال بالخادم', 0);
+    throw new ApiError(errorMessage(null, 'تعذر الاتصال بالخادم', 0), 0);
   }
 
   emitOnline(true);

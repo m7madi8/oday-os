@@ -55,10 +55,16 @@ Write-Host "  Phone APK  talks to $ApiUrl  (restart the app after API changes)"
 Write-Host "  Phone UI   scan the Expo QR for instant screen updates"
 Write-Host "  Mobile login: server $ApiUrl | user oday | pass oday"
 Write-Host ""
+if (-not (Test-PortOpen 3306)) {
+  Write-Host "WARNING: Nothing is listening on MySQL port 3306."
+  Write-Host "  Laravel returns HTTP 500 until MySQL is running (DB_* in .env)."
+  Write-Host "  Install/start MySQL (Laragon, XAMPP, or Docker) then: php artisan migrate"
+  Write-Host ""
+}
 try {
   & php artisan oday:bootstrap-mobile-user --reset | Out-Null
 } catch {
-  Write-Host "Mobile user bootstrap skipped"
+  Write-Host "Mobile user bootstrap skipped (often because MySQL is down)"
 }
 Write-Host ""
 

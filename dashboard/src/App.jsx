@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { C, FONT_BODY, PAGE_META, YEARS, getPalette } from './theme';
 import { NAV_GROUPS } from './lib/navigation';
 import { BrandLogo } from './components/BrandLogo';
@@ -9,10 +9,13 @@ import { SessionPanel } from './pages/SessionPanel';
 import { Invoices } from './pages/Invoices';
 import { AiAssistant } from './pages/AiAssistant';
 import { Projects } from './pages/Projects';
+import { ProjectDetail } from './pages/ProjectDetail';
 import { Clients } from './pages/Clients';
 import { Documents } from './pages/Documents';
 import { Payments } from './pages/Payments';
 import { Cheques } from './pages/Cheques';
+import { ChequePreviewPlayground } from './pages/ChequePreviewPlayground';
+import { ChequeDesignGallery } from './pages/ChequeDesignGallery';
 import { Expenses } from './pages/Expenses';
 import { Payroll } from './pages/Payroll';
 import { Reports } from './pages/Reports';
@@ -32,10 +35,28 @@ import { OfflineBanner } from './components/ui/OfflineBanner';
 import { ToastHost } from './components/ui/ToastHost';
 import { UpdateListener } from './components/UpdateListener';
 
+import { showToast } from './lib/toast';
+import {
+  getAppPath,
+  navigateApp,
+  pageIdFromPath,
+  parseChequeRoute,
+  subscribeAppRoute,
+} from './lib/routing/appRoutes';
+
+const devChequePreview = import.meta.env.DEV
+  && typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('chequePreview') === '1';
+
+const devChequeGallery = import.meta.env.DEV
+  && typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('chequeGallery') === '1';
+
 export default function App() {
   const { ready: authReady, session } = useAuth();
   const desktop = isDesktop();
-  const [page, setPage] = useState('dashboard');
+  const [page, setPage] = useState(() => pageIdFromPath(getAppPath()) || 'dashboard');
+  const [projectDetailId, setProjectDetailId] = useState(null);
   const [year, setYear] = useState(2026);
   const [hidden, setHidden] = useState(false);
   const [ready, setReady] = useState(false);
@@ -47,6 +68,16 @@ export default function App() {
   const saveTimer = useRef(null);
   const skipOfficeSave = useRef(true);
   const navGroups = useMemo(() => filterNavGroups(NAV_GROUPS, session?.user), [session]);
+
+  const handleNavigate = useCallback((nextPage) => {
+    setPage(nextPage);
+    if (nextPage === 'checks') {
+      const sub = parseChequeRoute(getAppPath());
+      if (!sub) navigateApp('/cheques');
+    } else if (parseChequeRoute(getAppPath())) {
+      navigateApp('/', { replace: true });
+    }
+  }, []);
 
   useEffect(() => {
     if (!desktop) return undefined;
@@ -131,14 +162,14 @@ export default function App() {
       }
       if ((event.ctrlKey || event.metaKey) && event.key === ',') {
         event.preventDefault();
-        setPage('settings');
+        handleNavigate('settings');
       }
       if ((event.ctrlKey || event.metaKey) && event.key >= '1' && event.key <= '9') {
         const allowed = navGroups.flatMap((group) => group.items.map((item) => item.id));
         const next = allowed[Number(event.key) - 1];
         if (next) {
           event.preventDefault();
-          setPage(next);
+          handleNavigate(next);
         }
       }
     }
@@ -151,7 +182,7 @@ export default function App() {
       document.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('resize', onResize);
     };
-  }, [navGroups]);
+  }, [navGroups, handleNavigate]);
 
   useEffect(() => {
     const scroller = document.querySelector('[data-app-scroll]');
@@ -167,6 +198,38 @@ export default function App() {
     const allowed = navGroups.flatMap((group) => group.items.map((item) => item.id));
     if (allowed.length && !allowed.includes(page)) setPage(allowed[0]);
   }, [navGroups, page]);
+
+  useEffect(() => {
+    if (!session) return undefined;
+    function syncFromPath() {
+      const path = getAppPath();
+      const fromPath = pageIdFromPath(path);
+      if (fromPath && fromPath !== page) setPage(fromPath);
+    }
+    syncFromPath();
+    return subscribeAppRoute(syncFromPath);
+  }, [session, page]);
+
+  useEffect(() => {
+    if (page !== 'projects') setProjectDetailId(null);
+  }, [page]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const backup = params.get('backup');
+    if (!backup) return;
+    if (backup === 'google-connected') {
+      setPage('settings');
+      showToast('تم ربط Google Drive بنجاح', 'ok');
+    } else if (backup === 'google-error') {
+      setPage('settings');
+      showToast('تعذر إكمال ربط Google Drive', 'error');
+    }
+    if (params.get('section') === 'backup') {
+      setPage('settings');
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
 
   useEffect(() => {
     const lang = office.language === 'en' ? 'en' : 'ar';
@@ -202,7 +265,7 @@ export default function App() {
       <div className="app-frame" style={{ background: C.paper }}>
         <Sidebar
           active={page}
-          onNavigate={setPage}
+          onNavigate={handleNavigate}
           navGroups={navGroups}
           sidebarDark={getPalette(office.paletteId).sidebarDark}
           menuOpen={menuOpen}
@@ -237,16 +300,29 @@ export default function App() {
             menuOpen={menuOpen}
             onToggleMenu={() => setMenuOpen((open) => !open)}
             desktop={desktop}
-            onNavigate={setPage}
+            onNavigate={handleNavigate}
             navGroups={navGroups}
           />
           <div className="app-scroll" data-app-scroll>
             <div className="app-content">
               <OfflineBanner />
-              {page === 'dashboard' ? (
-                <Dashboard key={dataEpoch} year={year} hidden={hidden} onNavigate={setPage} />
+              {devChequeGallery ? (
+                <ChequeDesignGallery />
+              ) : devChequePreview ? (
+                <ChequePreviewPlayground />
+              ) : page === 'dashboard' ? (
+                <Dashboard key={dataEpoch} year={year} hidden={hidden} onNavigate={handleNavigate} />
+              ) : page === 'projects' && projectDetailId ? (
+                <ProjectDetail
+                  projectId={projectDetailId}
+                  hidden={hidden}
+                  onBack={() => setProjectDetailId(null)}
+                />
               ) : page === 'projects' ? (
-                <Projects hidden={hidden} />
+                <Projects
+                  hidden={hidden}
+                  onOpenProject={(id) => setProjectDetailId(id)}
+                />
               ) : page === 'clients' ? (
                 <Clients hidden={hidden} />
               ) : page === 'documents' ? (
@@ -260,7 +336,7 @@ export default function App() {
               ) : page === 'expenses' ? (
                 <Expenses hidden={hidden} />
               ) : page === 'payroll' ? (
-                <Payroll />
+                <Payroll hidden={hidden} />
               ) : page === 'reports' ? (
                 <Reports />
               ) : page === 'ai-assistant' ? (
@@ -301,16 +377,16 @@ export default function App() {
                   />
                 </>
               ) : (
-                <Dashboard year={year} hidden={hidden} onNavigate={setPage} />
+                <Dashboard year={year} hidden={hidden} onNavigate={handleNavigate} />
               )}
             </div>
           </div>
         </div>
       </div>
-      {desktop ? null : (
+      {desktop || menuOpen ? null : (
         <BottomNav
           active={page}
-          onNavigate={setPage}
+          onNavigate={handleNavigate}
           onMore={() => setMenuOpen(true)}
           navGroups={navGroups}
         />

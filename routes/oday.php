@@ -9,8 +9,10 @@ use App\Http\Controllers\OdayDashboardController;
 use App\Http\Controllers\Oday\MobileAiController;
 use App\Http\Controllers\Oday\MobileAuthController;
 use App\Http\Controllers\Oday\MobileChequeController;
+use App\Http\Controllers\Oday\MobileDocumentController;
 use App\Http\Controllers\Oday\MobileOfficeSettingsController;
 use App\Http\Controllers\Oday\MobileOverviewController;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('api/oday/desktop')->middleware(['api', 'throttle:30,1'])->group(function () {
@@ -24,7 +26,18 @@ Route::prefix('api/oday')->middleware(['api', 'throttle:60,1', 'oday.token'])->g
 });
 
 Route::prefix('api/oday/mobile')->middleware(['api', 'throttle:60,1'])->group(function () {
-    Route::get('health', fn () => response()->json(['ok' => true, 'message' => 'ODAY mobile API']));
+    Route::get('health', function () {
+        try {
+            DB::connection()->getPdo();
+
+            return response()->json(['ok' => true, 'message' => 'ODAY mobile API', 'database' => 'ok']);
+        } catch (\Throwable) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'تعذر الاتصال بقاعدة البيانات. شغّل MySQL (المنفذ 3306) وتحقق من إعدادات DB في .env.',
+            ], 503);
+        }
+    });
 });
 
 Route::prefix('api/oday/mobile')->middleware(['api', 'throttle:login', 'email_db'])->group(function () {
@@ -49,4 +62,6 @@ Route::prefix('api/oday/mobile')->middleware(['api', 'throttle:api', 'token_auth
     Route::get('cheques/{cheque}', [MobileChequeController::class, 'show']);
     Route::put('cheques/{cheque}', [MobileChequeController::class, 'update']);
     Route::delete('cheques/{cheque}', [MobileChequeController::class, 'destroy']);
+
+    Route::put('documents/{document}/assign-project', [MobileDocumentController::class, 'assignProject']);
 });

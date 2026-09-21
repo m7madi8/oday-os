@@ -173,6 +173,8 @@ class Kernel extends ConsoleKernel
 
             $schedule->command('queue:restart')->everyFiveMinutes()->withoutOverlapping();
         }
+
+        $schedule->command('oday:backup-run-scheduled')->everyFifteenMinutes()->withoutOverlapping()->name('oday-backup-schedule');
     }
 
     /**
