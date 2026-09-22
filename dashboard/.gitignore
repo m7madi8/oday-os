@@ -4,4 +4,6 @@ dist-electron
 release
 .DS_Store
 .env
-data
+# Local-only files under data/ (bank registry is tracked)
+data/*
+!data/palestinianBanks.js
