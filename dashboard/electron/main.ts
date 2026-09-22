@@ -10,6 +10,7 @@ import { registerShellIpc } from './ipc/shell';
 import { registerNotifyIpc } from './ipc/notify';
 import { registerPrintIpc } from './ipc/print';
 import { setupAutoUpdater } from './updater';
+import { allowedRemoteOrigins, resolveRemoteDashboardUrl } from './uiUrl';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -70,9 +71,27 @@ function registerAppProtocol() {
   });
 }
 
+async function loadWindowUrl(win: BrowserWindow) {
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devServerUrl) {
+    await win.loadURL(devServerUrl);
+    return 'dev';
+  }
+  if (app.isPackaged) {
+    const remote = await resolveRemoteDashboardUrl();
+    if (remote) {
+      await win.loadURL(remote);
+      return 'remote';
+    }
+  }
+  await win.loadURL('oday://index.html');
+  return 'bundled';
+}
+
 function createWindow() {
   const isMac = process.platform === 'darwin';
   const icon = appIconImage();
+  const remoteOrigins = allowedRemoteOrigins();
   const win = new BrowserWindow({
     width: 1440,
     height: 920,
@@ -104,7 +123,7 @@ function createWindow() {
   });
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
-  applyWindowSecurity(win, devServerUrl);
+  applyWindowSecurity(win, devServerUrl, remoteOrigins);
   mainWindow = win;
   if (icon) win.setIcon(icon);
 
@@ -117,11 +136,7 @@ function createWindow() {
   });
   void win.webContents.setVisualZoomLevelLimits(1, 1);
 
-  if (devServerUrl) {
-    void win.loadURL(devServerUrl);
-  } else {
-    void win.loadURL('oday://index.html');
-  }
+  void loadWindowUrl(win);
 
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null;
@@ -175,6 +190,13 @@ app.whenReady().then(async () => {
     return win.isFullScreen();
   });
   ipcMain.handle('oday:app:platform', () => process.platform);
+
+  ipcMain.handle('oday:ui:reload', async () => {
+    const win = currentWindow();
+    if (!win || win.isDestroyed()) return { mode: 'none' };
+    const mode = await loadWindowUrl(win);
+    return { mode };
+  });
 
   await setupAutoUpdater(() => mainWindow);
   const win = createWindow();

@@ -11,7 +11,19 @@ export function isExternalUrl(url: string): boolean {
   }
 }
 
-export function applyWindowSecurity(win: BrowserWindow, devServerUrl?: string) {
+function originOf(url: string) {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return '';
+  }
+}
+
+export function applyWindowSecurity(
+  win: BrowserWindow,
+  devServerUrl?: string,
+  remoteOrigins: Set<string> = new Set(),
+) {
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (isExternalUrl(url)) {
       void shell.openExternal(url);
@@ -22,7 +34,8 @@ export function applyWindowSecurity(win: BrowserWindow, devServerUrl?: string) {
   win.webContents.on('will-navigate', (event, url) => {
     const allowedDev = Boolean(devServerUrl && url.startsWith(devServerUrl));
     const allowedApp = url.startsWith('oday://') || url.startsWith('file://');
-    if (!allowedDev && !allowedApp) {
+    const allowedRemote = remoteOrigins.has(originOf(url));
+    if (!allowedDev && !allowedApp && !allowedRemote) {
       event.preventDefault();
       if (isExternalUrl(url)) {
         void shell.openExternal(url);

@@ -2373,3 +2373,18 @@ html[data-desktop] #app-sidebar * {
     justify-content: flex-end;
   }
 }
+
+.os-update-banner {
+  position: fixed;
+  z-index: 80;
+  inset-inline: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  max-width: 28rem;
+  margin-inline-start: auto;
+  padding: 1rem 1.1rem;
+  pointer-events: auto;
+}
+
+html:not([data-desktop]) .os-update-banner {
+  display: none;
+}

@@ -2,7 +2,7 @@ import { app, ipcMain, safeStorage } from 'electron';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-const ALLOWED_KEYS = new Set(['token', 'user', 'company', 'serverUrl']);
+const ALLOWED_KEYS = new Set(['token', 'user', 'company', 'serverUrl', 'dashboardUrl']);
 
 type Vault = Record<string, string>;
 

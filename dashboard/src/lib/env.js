@@ -44,6 +44,7 @@ export async function persistServerUrl(value) {
     if (next) await bridge.store.set('serverUrl', next);
     else await bridge.store.delete('serverUrl');
     await bridge.updates?.syncServer?.();
+    await bridge.ui?.reload?.();
   }
   return next;
 }

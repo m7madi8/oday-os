@@ -1,5 +1,24 @@
 export {};
 
+export type UpdatePhase =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'downloading'
+  | 'ready'
+  | 'error';
+
+export type UpdateStatePayload = {
+  phase: UpdatePhase;
+  currentVersion: string;
+  version?: string;
+  percent?: number;
+  transferred?: number;
+  total?: number;
+  message?: string;
+  error?: string;
+};
+
 declare global {
   interface Window {
     oday?: {
@@ -28,9 +47,12 @@ declare global {
         show: (payload: { title?: string; body?: string }) => Promise<boolean>;
       };
       updates?: {
-        check: () => Promise<boolean>;
-        syncServer: () => Promise<boolean>;
-        onStatus: (listener: (payload: { title?: string; body?: string }) => void) => () => void;
+        check: () => Promise<UpdateStatePayload>;
+        getState: () => Promise<UpdateStatePayload>;
+        install: () => Promise<boolean>;
+        dismiss: () => Promise<boolean>;
+        syncServer: () => Promise<UpdateStatePayload>;
+        onState: (listener: (payload: UpdateStatePayload) => void) => () => void;
       };
       print: {
         pdf: (payload: { data: string; name?: string }) => Promise<boolean>;

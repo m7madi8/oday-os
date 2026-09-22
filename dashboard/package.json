@@ -1,7 +1,11 @@
 {
   "name": "oday-os",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/m7madi8/oday-os.git"
+  },
   "description": "ODAY OS — نظام إدارة مكتب عدي أبو ضحى المعماري",
   "author": "عدي أبو ضحى (Oday Abu Doha)",
   "license": "UNLICENSED",
@@ -12,8 +16,12 @@
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 5173",
     "desktop:dev": "cross-env ODAY_DESKTOP=1 vite --host 0.0.0.0 --port 5173",
-    "desktop:build": "cross-env ODAY_DESKTOP=1 CSC_IDENTITY_AUTO_DISCOVERY=false vite build && electron-builder --win nsis --publish never && node scripts/publish-desktop-updates.cjs",
-    "desktop:build:mac": "cross-env ODAY_DESKTOP=1 vite build && electron-builder --mac dmg --publish never && node scripts/publish-desktop-updates.cjs",
+    "desktop:dist": "cross-env ODAY_DESKTOP=1 CSC_IDENTITY_AUTO_DISCOVERY=false vite build && electron-builder --win nsis --publish never",
+    "desktop:build": "npm run desktop:dist",
+    "desktop:release": "cross-env ODAY_DESKTOP=1 CSC_IDENTITY_AUTO_DISCOVERY=false vite build && electron-builder --win nsis --publish always",
+    "desktop:build:mac": "cross-env ODAY_DESKTOP=1 vite build && electron-builder --mac dmg --publish never",
+    "desktop:release:mac": "cross-env ODAY_DESKTOP=1 vite build && electron-builder --mac dmg --publish always",
+    "desktop:publish-local": "node scripts/publish-desktop-updates.cjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -95,9 +103,13 @@
       ],
       "artifactName": "ODAY-OS.${ext}"
     },
-    "publish": {
-      "provider": "generic",
-      "url": "https://example.invalid/desktop-updates"
-    }
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "m7madi8",
+        "repo": "oday-os",
+        "releaseType": "release"
+      }
+    ]
   }
 }

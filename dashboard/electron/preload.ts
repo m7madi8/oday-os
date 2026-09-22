@@ -32,13 +32,19 @@ const oday = {
   notify: {
     show: (payload: { title?: string; body?: string }) => ipcRenderer.invoke('oday:notify:show', payload) as Promise<boolean>,
   },
+  ui: {
+    reload: () => ipcRenderer.invoke('oday:ui:reload') as Promise<{ mode?: string }>,
+  },
   updates: {
-    check: () => ipcRenderer.invoke('oday:update:check') as Promise<boolean>,
-    syncServer: () => ipcRenderer.invoke('oday:update:sync-server') as Promise<boolean>,
-    onStatus: (listener: (payload: { title?: string; body?: string }) => void) => {
-      const wrapped = (_event: unknown, payload: { title?: string; body?: string }) => listener(payload);
-      ipcRenderer.on('oday:update:status', wrapped);
-      return () => ipcRenderer.removeListener('oday:update:status', wrapped);
+    check: () => ipcRenderer.invoke('oday:update:check') as Promise<Record<string, unknown>>,
+    getState: () => ipcRenderer.invoke('oday:update:get-state') as Promise<Record<string, unknown>>,
+    install: () => ipcRenderer.invoke('oday:update:install') as Promise<boolean>,
+    dismiss: () => ipcRenderer.invoke('oday:update:dismiss') as Promise<boolean>,
+    syncServer: () => ipcRenderer.invoke('oday:update:sync-server') as Promise<Record<string, unknown>>,
+    onState: (listener: (payload: Record<string, unknown>) => void) => {
+      const wrapped = (_event: unknown, payload: Record<string, unknown>) => listener(payload);
+      ipcRenderer.on('oday:update:state', wrapped);
+      return () => ipcRenderer.removeListener('oday:update:state', wrapped);
     },
   },
   print: {

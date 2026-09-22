@@ -1,169 +1,200 @@
-import { app, Notification, ipcMain, net, powerMonitor, type BrowserWindow } from 'electron';
+import { app, ipcMain, powerMonitor, type BrowserWindow } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import { readStoredKey } from './ipc/store';
+import type { ProgressInfo, UpdateInfo } from 'electron-updater';
+import type { UpdateStatePayload } from './updaterTypes';
 
 const CHECK_EVERY_MS = 5 * 60 * 1000;
-const INSTALL_DELAY_MS = 2500;
+const ERROR_RESET_MS = 8_000;
 
+let getWindow: () => BrowserWindow | null = () => null;
 let checking = false;
-let installing = false;
 let lastFocusCheck = 0;
-let lastMissingFeedNotice = '';
+let readyDismissed = false;
+let readyVersion = '';
 
-function stripSlash(value: string) {
-  return value.replace(/\/+$/, '');
-}
+let state: UpdateStatePayload = {
+  phase: 'idle',
+  currentVersion: app.getVersion(),
+};
 
-function isNewerVersion(remote: string, local: string) {
-  const a = String(remote || '').split('.').map((part) => Number.parseInt(part, 10) || 0);
-  const b = String(local || '').split('.').map((part) => Number.parseInt(part, 10) || 0);
-  const len = Math.max(a.length, b.length, 3);
-  for (let i = 0; i < len; i += 1) {
-    const left = a[i] || 0;
-    const right = b[i] || 0;
-    if (left > right) return true;
-    if (left < right) return false;
+function log(message: string, detail?: unknown) {
+  if (detail !== undefined) {
+    console.log(`[ODAY Update] ${message}`, detail);
+    return;
   }
-  return false;
+  console.log(`[ODAY Update] ${message}`);
 }
 
-function resolveFeedUrl() {
-  const fromEnv = stripSlash(String(process.env.ODAY_UPDATE_FEED_URL || '').trim());
-  if (fromEnv) return fromEnv;
-  const server = stripSlash(readStoredKey('serverUrl') || '');
-  if (server) return `${server}/desktop-updates`;
-  return '';
+function publicState(): UpdateStatePayload {
+  return { ...state, currentVersion: app.getVersion() };
 }
 
-function applyFeedUrl() {
-  const feed = resolveFeedUrl();
-  if (!feed) return '';
-  autoUpdater.setFeedURL({ provider: 'generic', url: feed });
-  return feed;
+function emitState(patch: Partial<UpdateStatePayload>) {
+  state = {
+    ...state,
+    ...patch,
+    currentVersion: app.getVersion(),
+  };
+  const payload = publicState();
+  getWindow()?.webContents.send('oday:update:state', payload);
+  return payload;
 }
 
-function notify(title: string, body: string, getWindow: () => BrowserWindow | null) {
-  const win = getWindow();
-  win?.webContents.send('oday:update:status', { title, body });
-  if (!Notification.isSupported()) return;
-  const toast = new Notification({ title, body, silent: false });
-  toast.on('click', () => {
-    if (!win || win.isDestroyed()) return;
-    if (win.isMinimized()) win.restore();
-    win.show();
-    win.focus();
-  });
-  toast.show();
+function applyOptionalFeedOverride() {
+  const override = String(process.env.ODAY_UPDATE_FEED_URL || '').trim().replace(/\/+$/, '');
+  if (!override) return;
+  log('Using generic update feed override from ODAY_UPDATE_FEED_URL');
+  autoUpdater.setFeedURL({ provider: 'generic', url: override });
 }
 
-async function fetchSiteVersion(server: string) {
+async function runCheck() {
+  if (!app.isPackaged || checking) return publicState();
+  checking = true;
   try {
-    const response = await net.fetch(`${stripSlash(server)}/api/oday/desktop/version`);
-    if (!response.ok) return null;
-    const payload = (await response.json()) as { version?: string };
-    return String(payload?.version || '').trim() || null;
-  } catch {
-    return null;
+    log(`Checking for update (current ${app.getVersion()})`);
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    log('Check failed', message);
+    emitState({ phase: 'error', error: message, message: message });
+    setTimeout(() => {
+      if (state.phase === 'error') emitState({ phase: 'idle', error: undefined, message: undefined });
+    }, ERROR_RESET_MS);
+  } finally {
+    checking = false;
   }
+  return publicState();
 }
 
-export async function setupAutoUpdater(getWindow: () => BrowserWindow | null) {
-  async function checkForUpdates() {
-    if (!app.isPackaged || checking || installing) return;
-    checking = true;
-    try {
-      const feed = applyFeedUrl();
-      const server = stripSlash(readStoredKey('serverUrl') || '');
-      const remote = server ? await fetchSiteVersion(server) : null;
-      const siteHasNewer = Boolean(remote && isNewerVersion(remote, app.getVersion()));
+export async function setupAutoUpdater(resolveWindow: () => BrowserWindow | null) {
+  getWindow = resolveWindow;
 
-      let foundInstaller = false;
-      if (feed) {
-        try {
-          const result = await autoUpdater.checkForUpdates();
-          foundInstaller = Boolean(
-            result?.updateInfo?.version && isNewerVersion(result.updateInfo.version, app.getVersion()),
-          );
-        } catch {
-          foundInstaller = false;
-        }
-      }
-      if (siteHasNewer && !foundInstaller && lastMissingFeedNotice !== remote) {
-        lastMissingFeedNotice = remote || '';
-        notify(
-          'تحديث ODAY OS',
-          `الموقع نُشر عليه إصدار ${remote}. انشر مثبّت سطح المكتب في /desktop-updates ليُثبَّت تلقائيًا.`,
-          getWindow,
-        );
-      }
-    } catch {
-      /* ignore network failures */
-    } finally {
-      checking = false;
-    }
-  }
+  ipcMain.handle('oday:update:get-state', () => publicState());
 
   ipcMain.handle('oday:update:check', async () => {
-    await checkForUpdates();
-    return true;
+    if (!app.isPackaged) return publicState();
+    return runCheck();
   });
 
   ipcMain.handle('oday:update:sync-server', async () => {
-    if (app.isPackaged) applyFeedUrl();
-    await checkForUpdates();
+    if (!app.isPackaged) return publicState();
+    return runCheck();
+  });
+
+  ipcMain.handle('oday:update:install', () => {
+    if (!app.isPackaged || state.phase !== 'ready') return false;
+    log('Install started');
+    try {
+      autoUpdater.quitAndInstall(false, true);
+      return true;
+    } catch (error) {
+      log('Install failed', error);
+      return false;
+    }
+  });
+
+  ipcMain.handle('oday:update:dismiss', () => {
+    if (state.phase === 'ready') {
+      readyDismissed = true;
+      readyVersion = state.version || readyVersion;
+      emitState({ phase: 'idle', percent: undefined, transferred: undefined, total: undefined });
+    }
     return true;
   });
 
-  if (!app.isPackaged) return;
+  if (!app.isPackaged) {
+    log('Auto-update disabled in development');
+    emitState({ phase: 'idle', currentVersion: app.getVersion() });
+    return;
+  }
+
+  applyOptionalFeedOverride();
 
   autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.autoInstallOnAppQuit = false;
   autoUpdater.allowPrerelease = false;
   autoUpdater.allowDowngrade = false;
-  autoUpdater.disableDifferentialDownload = true;
 
-  autoUpdater.on('update-available', (info) => {
-    notify(
-      'تحديث ODAY OS',
-      `يتوفر إصدار ${info.version}. جارٍ التنزيل والتثبيت تلقائيًا.`,
-      getWindow,
-    );
+  autoUpdater.on('checking-for-update', () => {
+    emitState({ phase: 'checking', error: undefined, message: undefined });
   });
 
-  autoUpdater.on('update-downloaded', (info) => {
-    if (installing) return;
-    installing = true;
-    notify(
-      'تحديث ODAY OS',
-      `تم تنزيل الإصدار ${info.version}. سيُعاد تشغيل التطبيق الآن لإتمام التثبيت.`,
-      getWindow,
-    );
+  autoUpdater.on('update-not-available', (info: UpdateInfo) => {
+    log('No update available', info.version);
+    emitState({
+      phase: 'idle',
+      version: undefined,
+      percent: undefined,
+      transferred: undefined,
+      total: undefined,
+    });
+  });
+
+  autoUpdater.on('update-available', (info: UpdateInfo) => {
+    log('Update available', info.version);
+    if (readyDismissed && info.version === readyVersion) {
+      log('User dismissed this version; skipping UI until next release');
+      return;
+    }
+    emitState({
+      phase: 'available',
+      version: info.version,
+      message: `يتوفر إصدار ${info.version}`,
+    });
+  });
+
+  autoUpdater.on('download-progress', (progress: ProgressInfo) => {
+    emitState({
+      phase: 'downloading',
+      percent: Math.round(progress.percent),
+      transferred: progress.transferred,
+      total: progress.total,
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
+    log('Download completed', info.version);
+    if (readyDismissed && info.version === readyVersion) {
+      log('Download finished for dismissed version; waiting for user action via manual check');
+      emitState({ phase: 'idle', version: info.version, percent: 100 });
+      return;
+    }
+    readyDismissed = false;
+    readyVersion = info.version;
+    emitState({
+      phase: 'ready',
+      version: info.version,
+      percent: 100,
+      message: 'التحديث جاهز للتثبيت',
+    });
+  });
+
+  autoUpdater.on('error', (error: Error) => {
+    log('Update error', error.message);
+    emitState({ phase: 'error', error: error.message });
     setTimeout(() => {
-      try {
-        autoUpdater.quitAndInstall(true, true);
-      } catch {
-        installing = false;
+      if (state.phase === 'error') {
+        emitState({ phase: 'idle', error: undefined });
       }
-    }, INSTALL_DELAY_MS);
+    }, ERROR_RESET_MS);
   });
 
-  autoUpdater.on('error', () => {
-    /* keep the app usable if the feed is unreachable */
-  });
+  setTimeout(() => {
+    void runCheck();
+  }, 4_000);
 
-  await checkForUpdates();
   setInterval(() => {
-    void checkForUpdates();
+    void runCheck();
   }, CHECK_EVERY_MS);
 
   powerMonitor.on('resume', () => {
-    void checkForUpdates();
+    void runCheck();
   });
 
   app.on('browser-window-focus', () => {
     const now = Date.now();
     if (now - lastFocusCheck < 60_000) return;
     lastFocusCheck = now;
-    void checkForUpdates();
+    void runCheck();
   });
 }

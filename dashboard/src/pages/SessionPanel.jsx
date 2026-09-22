@@ -33,7 +33,13 @@ export function SessionPanel() {
           <GhostButton
             onClick={async () => {
               const next = await persistServerUrl(serverUrl);
-              showToast(next ? 'تم حفظ عنوان الخادم' : 'العنوان غير صالح', next ? 'ok' : 'error');
+              showToast(
+                next
+                  ? 'تم حفظ عنوان الخادم. إن كان npm run dev يعمل على 5173 ستُحمَّل لوحة الويب المحدّثة.'
+                  : 'العنوان غير صالح',
+                next ? 'ok' : 'error',
+                next ? 8000 : undefined,
+              );
             }}
           >
             حفظ العنوان
