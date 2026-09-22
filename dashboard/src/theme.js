@@ -69,7 +69,7 @@ export const PAGE_META = {
   expenses: { title: 'مصروف المكتب', subtitle: 'مصاريف تشغيلية' },
   payroll: { title: 'رواتب الفريق', subtitle: 'تعريف الموظفين وصرف رواتبهم' },
   reports: { title: 'التقارير', subtitle: 'ملخص مالي للمكتب' },
-  'ai-assistant': { title: 'المساعد الذكي', subtitle: 'قريبًا' },
+  'ai-assistant': { title: 'مساعد AI', subtitle: 'يتوفر قريبًا' },
   settings: { title: 'الإعدادات', subtitle: 'هوية المكتب والنظام' },
 };
 

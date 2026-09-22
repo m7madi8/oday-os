@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   ScrollText,
   Settings as SettingsIcon,
+  Sparkles,
   Users,
   Wallet,
 } from 'lucide-react';
@@ -37,6 +38,10 @@ export const NAV_GROUPS = [
       { id: 'expenses', label: 'مصروف المكتب', icon: Wallet },
       { id: 'payroll', label: 'رواتب الفريق', icon: Banknote },
     ],
+  },
+  {
+    title: 'الذكاء الاصطناعي',
+    items: [{ id: 'ai-assistant', label: 'مساعد AI', icon: Sparkles }],
   },
   {
     title: 'النظام',

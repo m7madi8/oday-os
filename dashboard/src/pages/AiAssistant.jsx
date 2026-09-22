@@ -27,10 +27,10 @@ export function AiAssistant() {
         <Sparkles size={24} strokeWidth={1.5} aria-hidden="true" />
       </span>
       <h2 className="text-lg mb-1" style={{ color: C.ink, fontFamily: FONT_HEAD, fontWeight: 600 }}>
-        المساعد الذكي
+        مساعد AI
       </h2>
       <p className="text-sm max-w-sm" style={{ color: C.inkSoft, fontFamily: FONT_BODY }}>
-        هذا القسم جاهز للتصميم — ستُضاف هنا أدوات الذكاء الاصطناعي للمكتب.
+        يتوفر قريبًا
       </p>
       <BrandLogo
         variant="mark"
