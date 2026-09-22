@@ -1,6 +1,8 @@
 import { app, ipcMain, powerMonitor, type BrowserWindow } from 'electron';
-import { autoUpdater } from 'electron-updater';
+import electronUpdater from 'electron-updater';
 import type { ProgressInfo, UpdateInfo } from 'electron-updater';
+
+const { autoUpdater } = electronUpdater;
 import type { UpdateStatePayload } from './updaterTypes';
 
 const CHECK_EVERY_MS = 5 * 60 * 1000;
