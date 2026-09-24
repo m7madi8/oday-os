@@ -19,6 +19,7 @@ import { ChequeDesignGallery } from './pages/ChequeDesignGallery';
 import { Expenses } from './pages/Expenses';
 import { Payroll } from './pages/Payroll';
 import { Reports } from './pages/Reports';
+import { DeadDebts } from './pages/DeadDebts';
 import { Login } from './pages/Login';
 import { getItem, setItem } from './lib/storage';
 import {
@@ -29,7 +30,7 @@ import {
   saveOfficeSettings,
 } from './lib/officeSettings';
 import { useAuth } from './lib/auth/AuthProvider';
-import { displayName, filterNavGroups } from './lib/permissions';
+import { canOpenPage, displayName, filterNavGroups, PAGE_PERMISSIONS } from './lib/permissions';
 import { isDesktop } from './lib/desktop';
 import { OfflineBanner } from './components/ui/OfflineBanner';
 import { ToastHost } from './components/ui/ToastHost';
@@ -195,9 +196,11 @@ export default function App() {
   }, [menuOpen]);
 
   useEffect(() => {
-    const allowed = navGroups.flatMap((group) => group.items.map((item) => item.id));
+    const user = session?.user;
+    if (!user) return;
+    const allowed = Object.keys(PAGE_PERMISSIONS).filter((id) => canOpenPage(user, id));
     if (allowed.length && !allowed.includes(page)) setPage(allowed[0]);
-  }, [navGroups, page]);
+  }, [session, page]);
 
   useEffect(() => {
     if (!session) return undefined;
@@ -294,7 +297,6 @@ export default function App() {
             year={year}
             setYear={setYear}
             hidden={hidden}
-            setHidden={setHidden}
             pageMeta={PAGE_META}
             years={YEARS}
             menuOpen={menuOpen}
@@ -324,11 +326,13 @@ export default function App() {
                   onOpenProject={(id) => setProjectDetailId(id)}
                 />
               ) : page === 'clients' ? (
-                <Clients hidden={hidden} />
+                <Clients hidden={hidden} onNavigate={handleNavigate} />
               ) : page === 'documents' ? (
                 <Documents />
               ) : page === 'invoices' ? (
                 <Invoices hidden={hidden} />
+              ) : page === 'dead-debts' ? (
+                <DeadDebts hidden={hidden} />
               ) : page === 'payments' ? (
                 <Payments hidden={hidden} />
               ) : page === 'checks' ? (

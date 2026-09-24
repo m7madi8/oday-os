@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Banknote, Pencil, Plus, Search } from 'lucide-react';
+import { Banknote, Package, Pencil, Plus, Search } from 'lucide-react';
 import {
   createEmployee,
   listEmployees,
@@ -9,15 +9,22 @@ import {
   updateEmployee,
 } from '../lib/api/payroll';
 import { invalidateFinance, keys } from '../lib/query';
-import { C, FONT_HEAD, FONT_SERIF, MONTHS, money, RADIUS } from '../theme';
+import { C, FONT_HEAD, FONT_SERIF, MONTHS, YEARS, money } from '../theme';
 import { canUser } from '../lib/permissions';
-import { currentPeriod, payrollMethodLabel, periodLabel, todayIso } from '../lib/labels';
+import { payrollMethodLabel, periodLabel, todayIso } from '../lib/labels';
 import { useAuth } from '../lib/auth/AuthProvider';
 import { Sheet } from '../components/ui/Sheet';
-import { EmptyState, ErrorState, GhostButton, LoadingBlock, PrimaryButton } from '../components/ui/Actions';
+import { ErrorState, GhostButton, LoadingBlock, PrimaryButton } from '../components/ui/Actions';
 import { Segmented, TextArea, TextInput } from '../components/settings/Fields';
 import { showToast } from '../lib/toast';
+import {
+  approxUsdFromIls,
+  filterPayrollPayments,
+  resolvePayrollPeriod,
+  sumPayrollAmount,
+} from '../lib/payroll/payrollFilters';
 
+const ICON = 1.5;
 const JOB_TITLES = ['مهندس معماري', 'مهندس مدني', 'رسام', 'محاسب', 'سكرتير', 'مدير مكتب', 'مساح'];
 
 const PAY_METHODS = [
@@ -36,16 +43,13 @@ const emptyEmployee = {
   is_active: true,
 };
 
-function periodOptions() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const items = [];
-  for (let offset = 0; offset < 14; offset += 1) {
-    const date = new Date(year, now.getMonth() - offset, 1);
-    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    items.push({ value, label: `${MONTHS[date.getMonth()]} ${date.getFullYear()}` });
-  }
-  return items;
+function FilterField({ label, children }) {
+  return (
+    <label className="os-projects-field">
+      <span className="os-projects-field__label">{label}</span>
+      {children}
+    </label>
+  );
 }
 
 function initialFromName(name) {
@@ -55,30 +59,42 @@ function initialFromName(name) {
 
 export function Payroll({ hidden }) {
   const { session } = useAuth();
-  const [period, setPeriod] = useState(currentPeriod);
+  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [month, setMonth] = useState('all');
+  const [view, setView] = useState('employees');
   const [filter, setFilter] = useState('');
   const [employeeOpen, setEmployeeOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [paying, setPaying] = useState(null);
+  const [payEmployeeId, setPayEmployeeId] = useState('');
   const [form, setForm] = useState(emptyEmployee);
   const [payForm, setPayForm] = useState({ amount: '', paid_on: todayIso(), method: 'cash', notes: '' });
 
+  const period = useMemo(() => resolvePayrollPeriod(year, month), [year, month]);
   const canCreate = canUser(session?.user, 'create_expense');
-  const periods = useMemo(() => periodOptions(), []);
 
   const query = useQuery({
     queryKey: keys.employees(`${period}|${filter}`),
-    queryFn: () => listEmployees({ period, filter, per_page: 50 }),
+    queryFn: () => listEmployees({ period, filter, per_page: 100 }),
   });
   const paymentsQuery = useQuery({
-    queryKey: keys.payrollPayments(period),
-    queryFn: () => listPayrollPayments({ period, per_page: 20 }),
+    queryKey: keys.payrollPayments('all'),
+    queryFn: () => listPayrollPayments({ per_page: 300 }),
   });
 
   const employees = query.data?.data || [];
-  const summary = query.data?.meta?.summary;
-  const payments = paymentsQuery.data?.data || [];
+  const allPayments = paymentsQuery.data?.data || [];
+  const filteredPayments = useMemo(
+    () => filterPayrollPayments(allPayments, { year, month }),
+    [allPayments, year, month],
+  );
+  const totalIls = useMemo(() => sumPayrollAmount(filteredPayments), [filteredPayments]);
+  const totalUsd = useMemo(() => approxUsdFromIls(totalIls), [totalIls]);
+
+  const loading = query.isLoading || paymentsQuery.isLoading;
+  const shownEmployees = employees.length;
+  const shownPayments = filteredPayments.length;
 
   const saveEmployee = useMutation({
     mutationFn: () => {
@@ -104,22 +120,28 @@ export function Payroll({ hidden }) {
   });
 
   const payMutation = useMutation({
-    mutationFn: () =>
-      payEmployee(paying.id, {
+    mutationFn: () => {
+      const targetId = paying?.id || payEmployeeId;
+      if (!targetId) throw new Error('اختر الموظف');
+      return payEmployee(targetId, {
         amount: Number(payForm.amount) || 0,
         period,
         paid_on: payForm.paid_on,
         method: payForm.method,
         notes: payForm.notes.trim(),
-      }),
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       setPayOpen(false);
       setPaying(null);
+      setPayEmployeeId('');
       showToast('تم صرف الراتب', 'ok');
     },
     onError: (error) => showToast(error.message, 'error'),
   });
+
+  const payTarget = paying || employees.find((row) => row.id === payEmployeeId) || null;
 
   function openCreate() {
     setEditing(null);
@@ -143,6 +165,7 @@ export function Payroll({ hidden }) {
 
   function openPay(row) {
     setPaying(row);
+    setPayEmployeeId(row.id);
     setPayForm({
       amount: row.salary ? String(row.salary) : '',
       paid_on: todayIso(),
@@ -152,136 +175,223 @@ export function Payroll({ hidden }) {
     setPayOpen(true);
   }
 
+  function openQuickPay() {
+    const unpaid = employees.filter((row) => !row.paid_this_period && row.is_active !== false);
+    if (unpaid.length === 1) {
+      openPay(unpaid[0]);
+      return;
+    }
+    setPaying(null);
+    setPayEmployeeId(unpaid[0]?.id || '');
+    setPayForm({
+      amount: unpaid[0]?.salary ? String(unpaid[0].salary) : '',
+      paid_on: todayIso(),
+      method: 'cash',
+      notes: '',
+    });
+    setPayOpen(true);
+  }
+
+  function onPayEmployeeChange(id) {
+    setPayEmployeeId(id);
+    const row = employees.find((item) => item.id === id);
+    if (row?.salary && !payForm.amount) {
+      setPayForm((prev) => ({ ...prev, amount: String(row.salary) }));
+    }
+  }
+
+  const emptyEmployees = !loading && !query.isError && view === 'employees' && employees.length === 0;
+  const emptyPayments = !loading && !paymentsQuery.isError && view === 'payments' && filteredPayments.length === 0;
+
   return (
-    <div className="space-y-4 min-w-0">
-      <div className="os-payroll-toolbar">
-        <label className="relative flex-1 min-w-0">
-          <Search size={20} className="absolute end-3 top-1/2 -translate-y-1/2" style={{ color: C.inkFaint }} />
-          <input
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-            placeholder="ابحث باسم الموظف"
-            className="os-search w-full ps-3 pe-10 py-3 text-base min-h-11 outline-none"
-            style={{ background: C.card, border: `1px solid ${C.border}`, color: C.ink, borderRadius: 8 }}
-          />
-        </label>
-        <select
-          value={period}
-          onChange={(event) => setPeriod(event.target.value)}
-          aria-label="شهر الراتب"
-          className="os-payroll-period"
-          style={{ background: C.card, border: `1px solid ${C.border}`, color: C.ink, borderRadius: RADIUS.md }}
-        >
-          {periods.map((item) => (
-            <option key={item.value} value={item.value}>{item.label}</option>
-          ))}
-        </select>
-        {canCreate ? (
-          <PrimaryButton onClick={openCreate}>
-            <Plus size={15} />
-            موظف جديد
-          </PrimaryButton>
-        ) : null}
+    <div className="os-projects min-w-0">
+      <header className="os-projects-header">
+        <div className="os-projects-header__copy">
+          <h2 className="os-projects-header__title" style={{ fontFamily: FONT_HEAD }}>
+            الرواتب
+          </h2>
+          <p className="os-projects-header__sub">رواتب الموظفين ودفعات الفريلانسرز</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 justify-end">
+          {canCreate ? (
+            <PrimaryButton type="button" onClick={openQuickPay} className="os-projects-header__cta">
+              <Plus size={18} strokeWidth={ICON} aria-hidden="true" />
+              دفعة راتب
+            </PrimaryButton>
+          ) : null}
+          {canCreate ? (
+            <GhostButton type="button" onClick={openCreate}>
+              موظف جديد
+            </GhostButton>
+          ) : null}
+        </div>
+      </header>
+
+      <div className="os-projects-panel os-payroll-filters">
+        <div className="os-payroll-filters__grid">
+          <FilterField label="السنة">
+            <select className="os-projects-select" value={year} onChange={(e) => setYear(e.target.value)}>
+              {YEARS.map((y) => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="الشهر">
+            <select className="os-projects-select" value={month} onChange={(e) => setMonth(e.target.value)}>
+              <option value="all">كل الشهور</option>
+              {MONTHS.map((label, index) => (
+                <option key={label} value={String(index + 1)}>{label}</option>
+              ))}
+            </select>
+          </FilterField>
+          <div className="os-projects-view-toggle os-payroll-view-toggle" role="group" aria-label="طريقة العرض">
+            <button
+              type="button"
+              className={view === 'employees' ? 'is-active' : ''}
+              onClick={() => setView('employees')}
+            >
+              حسب الموظف
+            </button>
+            <button
+              type="button"
+              className={view === 'payments' ? 'is-active' : ''}
+              onClick={() => setView('payments')}
+            >
+              كل الدفعات
+            </button>
+          </div>
+        </div>
+        <div className="os-payroll-total" aria-live="polite">
+          <span>الإجمالي:</span>
+          <strong className="os-num">{money(totalIls, hidden)}</strong>
+          <span className="os-payroll-total__fx os-num">
+            ≈ {hidden ? '••••' : `$${totalUsd.toFixed(2)}`}
+          </span>
+        </div>
       </div>
 
-      {summary ? (
-        <div className="os-payroll-summary" style={{ background: C.card, border: `1px solid ${C.border}` }}>
-          <div>
-            <span>الفريق</span>
-            <strong className="tabular-nums" style={{ fontFamily: FONT_SERIF }}>{summary.employee_count}</strong>
+      {view === 'employees' ? (
+        <div className="os-projects-panel os-projects-toolbar">
+          <div className="os-projects-toolbar__title">
+            <span className="os-projects-toolbar__dot" aria-hidden="true" />
+            <div>
+              <strong>الموظفون</strong>
+              <span className="os-projects-toolbar__count">
+                {periodLabel(period)} · {shownEmployees} موظف
+              </span>
+            </div>
           </div>
-          <div>
-            <span>صُرف</span>
-            <strong className="tabular-nums" style={{ fontFamily: FONT_SERIF }}>{summary.paid_count}</strong>
-          </div>
-          <div>
-            <span>متبقي</span>
-            <strong className="tabular-nums" style={{ fontFamily: FONT_SERIF }}>{summary.unpaid_count}</strong>
-          </div>
-          <div>
-            <span>رواتب الشهر</span>
-            <strong className="tabular-nums" style={{ fontFamily: FONT_SERIF }}>{money(summary.salary_total || 0, hidden)}</strong>
-          </div>
+          <label className="os-projects-search">
+            <Search size={18} strokeWidth={ICON} aria-hidden="true" />
+            <input
+              type="search"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="ابحث باسم الموظف…"
+              aria-label="بحث في الموظفين"
+            />
+          </label>
         </div>
       ) : null}
 
-      {query.isLoading ? <LoadingBlock /> : null}
-      {query.isError ? <ErrorState message={query.error?.message} onRetry={() => query.refetch()} /> : null}
+      <div className="os-projects-panel os-projects-body">
+        {loading ? <LoadingBlock /> : null}
+        {query.isError ? <ErrorState message={query.error?.message} onRetry={() => query.refetch()} /> : null}
 
-      {!query.isLoading && !query.isError && employees.length === 0 ? (
-        <EmptyState
-          title="لم يُضف أحد بعد"
-          body="أضف الموظف أو الموظفة هنا، ثم اصرف الراتب بضغطة واحدة."
-          action={canCreate ? <PrimaryButton onClick={openCreate}>موظف جديد</PrimaryButton> : null}
-        />
-      ) : null}
+        {emptyEmployees || emptyPayments ? (
+          <div className="os-projects-empty">
+            <span className="os-projects-empty__icon" aria-hidden="true">
+              <Package size={32} strokeWidth={1.25} />
+            </span>
+            <p className="os-projects-empty__title">ما في دفعات مسجلة</p>
+            <p className="os-projects-empty__body">
+              سجّل رواتب الموظفين ودفعات الفريلانسرز
+            </p>
+            {canCreate ? (
+              <div className="flex flex-wrap gap-2 justify-center mt-4">
+                <PrimaryButton type="button" onClick={openQuickPay}>
+                  <Plus size={16} strokeWidth={ICON} aria-hidden="true" />
+                  دفعة راتب
+                </PrimaryButton>
+                <GhostButton type="button" onClick={openCreate}>موظف جديد</GhostButton>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
-      {!query.isLoading && !query.isError && employees.length > 0 ? (
-        <div className="os-payroll-list">
-          {employees.map((row) => {
-            const paid = Boolean(row.paid_this_period);
-            return (
-              <article key={row.id} className="os-payroll-row" style={{ background: C.card, border: `1px solid ${C.border}` }}>
-                <div className="os-payroll-identity">
-                  <span className="os-payroll-avatar" aria-hidden="true" style={{ background: C.tint, color: C.ink }}>
-                    {initialFromName(row.name)}
-                  </span>
-                  <div className="min-w-0">
-                    <h3 style={{ color: C.ink, fontFamily: FONT_HEAD }}>{row.name}</h3>
-                    <p style={{ color: C.inkSoft }}>
-                      {row.job_title || 'بدون مسمّى'}
-                      {row.is_active === false ? ' · متوقف' : ''}
-                    </p>
+        {!loading && !query.isError && view === 'employees' && employees.length > 0 ? (
+          <div className="os-payroll-list os-payroll-list--inset">
+            {employees.map((row) => {
+              const paid = Boolean(row.paid_this_period);
+              return (
+                <article key={row.id} className="os-payroll-row">
+                  <div className="os-payroll-identity">
+                    <span className="os-payroll-avatar" aria-hidden="true">
+                      {initialFromName(row.name)}
+                    </span>
+                    <div className="min-w-0">
+                      <h3 style={{ color: C.ink, fontFamily: FONT_HEAD }}>{row.name}</h3>
+                      <p style={{ color: C.inkSoft }}>
+                        {row.job_title || 'بدون مسمّى'}
+                        {row.is_active === false ? ' · متوقف' : ''}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="os-payroll-meta">
-                  <div>
-                    <span>الراتب</span>
-                    <strong className="tabular-nums" style={{ fontFamily: FONT_SERIF }}>{money(row.salary || 0, hidden)}</strong>
+                  <div className="os-payroll-meta">
+                    <div>
+                      <span>الراتب</span>
+                      <strong className="tabular-nums os-num" style={{ fontFamily: FONT_SERIF }}>
+                        {money(row.salary || 0, hidden)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>{periodLabel(period)}</span>
+                      <strong style={{ color: paid ? C.emerald : C.ink }}>
+                        {paid ? `صُرف ${row.period_payment?.paid_on || ''}` : 'لم يُصرف'}
+                      </strong>
+                    </div>
                   </div>
-                  <div>
-                    <span>{periodLabel(period)}</span>
-                    <strong style={{ color: paid ? C.emerald : C.ink }}>
-                      {paid ? `صُرف ${row.period_payment?.paid_on || ''}` : 'لم يُصرف'}
-                    </strong>
+                  <div className="os-payroll-actions">
+                    {canCreate && !paid && row.is_active !== false ? (
+                      <PrimaryButton type="button" onClick={() => openPay(row)}>
+                        <Banknote size={15} />
+                        صرف الراتب
+                      </PrimaryButton>
+                    ) : null}
+                    {canCreate ? (
+                      <GhostButton type="button" onClick={() => openEdit(row)} aria-label="تعديل الموظف">
+                        <Pencil size={14} />
+                        تعديل
+                      </GhostButton>
+                    ) : null}
                   </div>
-                </div>
-                <div className="os-payroll-actions">
-                  {canCreate && !paid && row.is_active !== false ? (
-                    <PrimaryButton onClick={() => openPay(row)}>
-                      <Banknote size={15} />
-                      صرف الراتب
-                    </PrimaryButton>
-                  ) : null}
-                  {canCreate ? (
-                    <GhostButton onClick={() => openEdit(row)} aria-label="تعديل الموظف">
-                      <Pencil size={14} />
-                      تعديل
-                    </GhostButton>
-                  ) : null}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      ) : null}
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
 
-      {payments.length > 0 ? (
-        <section className="os-payroll-history" style={{ background: C.card, border: `1px solid ${C.border}` }}>
-          <h3 style={{ color: C.ink, fontFamily: FONT_HEAD }}>صرف {periodLabel(period)}</h3>
-          <ul>
-            {payments.map((row) => (
-              <li key={row.id}>
-                <span>{row.employee_name || 'موظف'}</span>
-                <span className="os-payroll-history-meta">
-                  {payrollMethodLabel(row.method)} · {row.paid_on}
-                </span>
-                <strong className="tabular-nums" style={{ fontFamily: FONT_SERIF }}>{money(row.amount || 0, hidden)}</strong>
-              </li>
+        {!loading && view === 'payments' && filteredPayments.length > 0 ? (
+          <div className="os-projects-rows" role="list">
+            <div className="os-projects-row os-projects-row--head os-projects-row--payroll" aria-hidden="true">
+              <span>الموظف</span>
+              <span>التاريخ</span>
+              <span>الطريقة</span>
+              <span>الفترة</span>
+              <span>المبلغ</span>
+            </div>
+            {filteredPayments.map((row) => (
+              <div key={row.id} role="listitem" className="os-projects-row os-projects-row--payroll">
+                <span className="os-projects-row__name">{row.employee_name || '—'}</span>
+                <span className="os-projects-row__muted">{row.paid_on || '—'}</span>
+                <span>{payrollMethodLabel(row.method)}</span>
+                <span className="os-projects-row__muted">{periodLabel(row.period) || row.period || '—'}</span>
+                <span className="os-num">{money(row.amount || 0, hidden)}</span>
+              </div>
             ))}
-          </ul>
-        </section>
-      ) : null}
+          </div>
+        ) : null}
+      </div>
 
       <Sheet
         open={employeeOpen}
@@ -352,13 +462,28 @@ export function Payroll({ hidden }) {
 
       <Sheet
         open={payOpen}
-        title={paying ? `صرف راتب ${paying.name}` : 'صرف الراتب'}
+        title={payTarget ? `صرف راتب ${payTarget.name}` : 'دفعة راتب'}
         onClose={() => setPayOpen(false)}
       >
         <p className="text-base" style={{ color: C.inkSoft }}>
           {periodLabel(period)}
-          {paying?.job_title ? ` · ${paying.job_title}` : ''}
+          {payTarget?.job_title ? ` · ${payTarget.job_title}` : ''}
         </p>
+        {!paying ? (
+          <label className="block">
+            <span className="block text-base mb-1.5" style={{ color: C.inkSoft }}>الموظف</span>
+            <select
+              className="os-projects-select w-full"
+              value={payEmployeeId}
+              onChange={(e) => onPayEmployeeChange(e.target.value)}
+            >
+              <option value="">اختر الموظف</option>
+              {employees.map((row) => (
+                <option key={row.id} value={row.id}>{row.name}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label className="block">
           <span className="block text-base mb-1.5" style={{ color: C.inkSoft }}>المبلغ</span>
           <TextInput
@@ -391,7 +516,7 @@ export function Payroll({ hidden }) {
           />
         </label>
         <PrimaryButton
-          disabled={!payForm.amount || !payForm.paid_on || payMutation.isPending}
+          disabled={(!paying && !payEmployeeId) || !payForm.amount || !payForm.paid_on || payMutation.isPending}
           loading={payMutation.isPending}
           onClick={() => payMutation.mutate()}
         >

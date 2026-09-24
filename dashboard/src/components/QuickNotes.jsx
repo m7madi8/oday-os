@@ -3,13 +3,14 @@ import { Check, Loader2 } from 'lucide-react';
 import { FONT_HEAD, RADIUS, C } from '../theme';
 import { getItem, setItem } from '../lib/storage';
 
-function autosize(node) {
+function autosize(node, minHeight = 72) {
   if (!node) return;
   node.style.height = 'auto';
-  node.style.height = `${Math.max(node.scrollHeight, 72)}px`;
+  node.style.height = `${Math.max(node.scrollHeight, minHeight)}px`;
 }
 
-export function QuickNotes() {
+export function QuickNotes({ variant = 'default' }) {
+  const isDesk = variant === 'desk';
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('idle');
   const [loaded, setLoaded] = useState(false);
@@ -29,13 +30,13 @@ export function QuickNotes() {
   }, []);
 
   useEffect(() => {
-    autosize(areaRef.current);
-  }, [notes, loaded]);
+    autosize(areaRef.current, isDesk ? 280 : 72);
+  }, [notes, loaded, isDesk]);
 
   function handleChange(e) {
     const v = e.target.value;
     setNotes(v);
-    autosize(e.target);
+    autosize(e.target, isDesk ? 280 : 72);
     setStatus('saving');
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(async () => {
@@ -50,12 +51,12 @@ export function QuickNotes() {
 
   return (
     <section
-      className="os-surface p-4 sm:p-6 fade-up"
+      className={`os-surface os-quick-notes ${isDesk ? 'os-quick-notes--desk' : ''} p-4 sm:p-6 fade-up`}
       style={{
-        background: C.paper,
-        border: `1px solid ${C.border}`,
-        borderRadius: RADIUS.md,
-        animationDelay: '420ms',
+        background: isDesk ? C.tint : C.paper,
+        border: `1px solid ${isDesk ? C.border : C.border}`,
+        borderRadius: RADIUS.lg,
+        animationDelay: isDesk ? '0ms' : '420ms',
       }}
     >
       <div className="flex items-center justify-between gap-3 mb-2">
@@ -84,7 +85,7 @@ export function QuickNotes() {
         rows={3}
         disabled={!loaded}
         aria-label="مذكّرات المكتب"
-        className="os-notes-area"
+        className={`os-notes-area ${isDesk ? 'os-notes-area--desk' : ''}`}
       />
     </section>
   );

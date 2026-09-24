@@ -6,6 +6,7 @@ export function listExpenses(params = {}) {
       page: params.page ?? 1,
       per_page: params.per_page ?? 50,
       filter: params.filter,
+      include: params.include,
     },
   });
 }

@@ -4,16 +4,16 @@ import {
   Bell,
   ChevronDown,
   CircleDollarSign,
-  Eye,
-  EyeOff,
   FileText,
   FolderKanban,
+  LogOut,
   Menu,
   ScrollText,
   Search,
   Users,
   X,
 } from 'lucide-react';
+import { useAuth } from '../lib/auth/AuthProvider';
 import { listClients } from '../lib/api/clients';
 import { listInvoices } from '../lib/api/invoices';
 import { fetchOverview } from '../lib/api/office';
@@ -22,7 +22,7 @@ import { flattenNavItems } from '../lib/navigation';
 import { keys } from '../lib/query';
 import { C, FONT_HEAD, FONT_SERIF, RADIUS, money } from '../theme';
 
-const ICON = 1.6;
+const ICON = 1.65;
 
 function useDebounced(value, delay = 280) {
   const [debounced, setDebounced] = useState(value);
@@ -65,7 +65,6 @@ export function TopBar({
   year,
   setYear,
   hidden,
-  setHidden,
   pageMeta,
   years,
   menuOpen = false,
@@ -74,6 +73,7 @@ export function TopBar({
   onNavigate,
   navGroups = [],
 }) {
+  const { logout } = useAuth();
   const phone = usePhoneChrome(desktop);
   const meta = pageMeta[page] || { title: page };
 
@@ -175,13 +175,18 @@ export function TopBar({
         year={year}
         setYear={setYear}
         hidden={hidden}
-        setHidden={setHidden}
         years={years}
         menuOpen={menuOpen}
         onToggleMenu={onToggleMenu}
         yearOpen={yearOpen}
         setYearOpen={setYearOpen}
         yearRef={yearRef}
+        bellOpen={bellOpen}
+        setBellOpen={setBellOpen}
+        bellRef={bellRef}
+        alerts={alerts}
+        onAlertGo={(alert) => go(alertHref(alert))}
+        onLogout={() => logout()}
       />
     );
   }
@@ -260,17 +265,6 @@ export function TopBar({
             ) : null}
           </div>
 
-          <button
-            type="button"
-            className={`os-topbar-icon ${hidden ? 'is-on' : ''}`}
-            onClick={() => setHidden((value) => !value)}
-            aria-pressed={hidden}
-            aria-label={hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
-            title={hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
-          >
-            {hidden ? <EyeOff size={17} strokeWidth={ICON} aria-hidden="true" /> : <Eye size={17} strokeWidth={ICON} aria-hidden="true" />}
-          </button>
-
           <div className="relative" ref={bellRef}>
             <button
               type="button"
@@ -308,6 +302,15 @@ export function TopBar({
             ) : null}
           </div>
 
+          <button
+            type="button"
+            className="os-topbar-icon os-topbar-logout"
+            onClick={() => logout()}
+            aria-label="تسجيل الخروج"
+            title="تسجيل الخروج"
+          >
+            <LogOut size={17} strokeWidth={ICON} aria-hidden="true" />
+          </button>
         </div>
       </div>
     </header>
@@ -319,13 +322,18 @@ function PhoneTopBar({
   year,
   setYear,
   hidden,
-  setHidden,
   years,
   menuOpen,
   onToggleMenu,
   yearOpen,
   setYearOpen,
   yearRef,
+  bellOpen,
+  setBellOpen,
+  bellRef,
+  alerts,
+  onAlertGo,
+  onLogout,
 }) {
   return (
     <header className="print-hide app-topbar app-topbar--mobile" dir="ltr">
@@ -399,20 +407,64 @@ function PhoneTopBar({
             ) : null}
           </div>
 
+          <div className="relative" ref={bellRef}>
+            <button
+              type="button"
+              className={`os-icon-btn os-topbar-icon ${bellOpen ? 'is-on' : ''}`}
+              onClick={() => { setYearOpen(false); setBellOpen((open) => !open); }}
+              aria-label="التنبيهات"
+              aria-expanded={bellOpen}
+              style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderRadius: RADIUS.md,
+              }}
+            >
+              <Bell size={17} strokeWidth={1.8} aria-hidden="true" />
+            </button>
+            {bellOpen ? (
+              <div
+                className="os-topbar-panel absolute end-0 mt-1 z-20"
+                role="menu"
+                aria-label="التنبيهات"
+                style={{ minWidth: 260 }}
+              >
+                <div className="os-topbar-panel__head">التنبيهات</div>
+                {alerts.length === 0 ? (
+                  <p className="os-topbar-panel__empty">لا تنبيهات تحتاج متابعة الآن.</p>
+                ) : (
+                  alerts.slice(0, 6).map((alert) => (
+                    <button
+                      key={alert.id}
+                      type="button"
+                      className="os-topbar-alert"
+                      onClick={() => onAlertGo(alert)}
+                    >
+                      <span className="os-topbar-alert__title">{alert.title}</span>
+                      <span className="os-topbar-alert__body">{alert.body}</span>
+                      {typeof alert.amount === 'number' ? (
+                        <span className="os-topbar-alert__amount os-num">{money(alert.amount, hidden)}</span>
+                      ) : null}
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
+
           <button
             type="button"
-            onClick={() => setHidden((value) => !value)}
-            aria-pressed={hidden}
-            aria-label={hidden ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
-            className="os-icon-btn os-eye-btn flex items-center gap-2 px-3 py-2 text-sm min-h-11"
+            onClick={onLogout}
+            aria-label="تسجيل الخروج"
+            className="os-icon-btn flex items-center justify-center min-h-11 min-w-11"
             style={{
-              background: hidden ? C.sidebar : C.card,
-              border: `1px solid ${hidden ? C.sidebar : C.border}`,
-              color: hidden ? C.sidebarTitle : C.ink,
+              background: C.card,
+              border: `1px solid ${C.border}`,
               borderRadius: RADIUS.md,
+              color: C.ink,
             }}
           >
-            {hidden ? <EyeOff size={17} strokeWidth={1.8} aria-hidden="true" /> : <Eye size={17} strokeWidth={1.8} aria-hidden="true" />}
+            <LogOut size={17} strokeWidth={1.8} aria-hidden="true" />
           </button>
         </div>
       </div>

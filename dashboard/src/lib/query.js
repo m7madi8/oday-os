@@ -38,6 +38,7 @@ export const keys = {
   documents: (filter = '') => ['documents', filter],
   employees: (key = '') => ['employees', key],
   payrollPayments: (key = '') => ['payroll-payments', key],
+  deadDebts: () => ['dead-debts'],
 };
 
 export function invalidateFinance() {

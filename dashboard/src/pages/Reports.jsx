@@ -1,122 +1,221 @@
-import { useState } from 'react';
-import { Download } from 'lucide-react';
-import { previewReport, startReport } from '../lib/api/reports';
-import { C, FONT_HEAD, cardShadow } from '../theme';
-import { PrimaryButton } from '../components/ui/Actions';
+import { useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Download, Printer } from 'lucide-react';
+import { listExpenses } from '../lib/api/expenses';
+import { listInvoices } from '../lib/api/invoices';
+import { listPayments } from '../lib/api/payments';
+import { listProjects } from '../lib/api/projects';
+import { FONT_HEAD, MONTHS, YEARS, money } from '../theme';
+import { ErrorState, GhostButton, LoadingBlock } from '../components/ui/Actions';
 import { showToast } from '../lib/toast';
 import { openOrSaveBlob } from '../lib/files';
+import {
+  buildReportCsv,
+  computeReportMetrics,
+  periodTitle,
+} from '../lib/reports/reportMetrics';
 
-const REPORTS = [
-  { id: 'invoices', label: 'تقرير الفواتير' },
-  { id: 'payments', label: 'تقرير الدفعات' },
-  { id: 'expenses', label: 'تقرير المصاريف' },
-  { id: 'projects', label: 'تقرير المشاريع' },
-  { id: 'clients', label: 'تقرير العملاء' },
-  { id: 'profitloss', label: 'الأرباح والخسائر' },
-];
+const ICON = 1.5;
 
-const RANGES = [
-  { id: 'this_month', label: 'هذا الشهر' },
-  { id: 'this_year', label: 'هذه السنة' },
-  { id: 'last_year', label: 'السنة الماضية' },
-  { id: 'all', label: 'الكل' },
-];
+function FilterField({ label, children }) {
+  return (
+    <label className="os-projects-field">
+      <span className="os-projects-field__label">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function MetricCard({ label, value, sub, tone = 'default', featured = false }) {
+  const className = [
+    'os-reports-metric',
+    featured ? 'is-featured' : '',
+    tone === 'income' ? 'is-income' : '',
+    tone === 'expense' ? 'is-expense' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <article className={className}>
+      <span className="os-reports-metric__label">{label}</span>
+      <strong className="os-reports-metric__value os-num">{value}</strong>
+      {sub ? <span className="os-reports-metric__sub">{sub}</span> : null}
+    </article>
+  );
+}
+
+async function loadReportSource() {
+  const [payments, expenses, invoices, projects] = await Promise.all([
+    listPayments({ per_page: 500 }),
+    listExpenses({ per_page: 500 }),
+    listInvoices({ per_page: 500 }),
+    listProjects({ per_page: 500 }),
+  ]);
+  return {
+    payments: payments?.data || [],
+    expenses: expenses?.data || [],
+    invoices: invoices?.data || [],
+    projects: projects?.data || [],
+  };
+}
 
 export function Reports() {
-  const [range, setRange] = useState('this_year');
-  const [loadingId, setLoadingId] = useState('');
-  const [preview, setPreview] = useState('');
+  const printRef = useRef(null);
+  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [month, setMonth] = useState('all');
 
-  async function run(type) {
-    setLoadingId(type);
-    setPreview('');
+  const query = useQuery({
+    queryKey: ['reports-dashboard', year, month],
+    queryFn: loadReportSource,
+  });
+
+  const periodLabel = useMemo(() => periodTitle(year, month, MONTHS), [year, month]);
+
+  const metrics = useMemo(() => {
+    if (!query.data) {
+      return computeReportMetrics({}, { year, month });
+    }
+    return computeReportMetrics(query.data, { year, month });
+  }, [query.data, year, month]);
+
+  async function exportCsv() {
     try {
-      const started = await startReport(type, { date_range: range, output: 'json' });
-      const hash = started?.message;
-      if (!hash || hash === 'working...') {
-        showToast('التقرير يُعالَج على الخادم', 'info');
-        return;
-      }
-      let result = null;
-      for (let attempt = 0; attempt < 12; attempt += 1) {
-        try {
-          result = await previewReport(hash);
-          break;
-        } catch (error) {
-          if (error.status !== 409) throw error;
-          await new Promise((resolve) => window.setTimeout(resolve, 700));
-        }
-      }
-      if (result == null) {
-        showToast('ما زال التقرير قيد التجهيز على الخادم', 'info');
-        return;
-      }
-      if (typeof result === 'string') {
-        const csv = decodeBase64(result);
-        setPreview(csv.slice(0, 4000));
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-        await openOrSaveBlob(blob, `${type}-${range}.csv`);
-      } else {
-        const text = JSON.stringify(result, null, 2);
-        setPreview(text.slice(0, 4000));
-      }
-      showToast('تم تجهيز التقرير من الخادم', 'ok');
+      const csv = buildReportCsv(metrics, { year, month, periodLabel });
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+      await openOrSaveBlob(blob, `oday-reports-${year}${month === 'all' ? '' : `-${month}`}.csv`);
+      showToast('تم تصدير CSV', 'ok');
     } catch (error) {
-      showToast(error.message || 'تعذر إنشاء التقرير', 'error');
-    } finally {
-      setLoadingId('');
+      showToast(error.message || 'تعذر التصدير', 'error');
+    }
+  }
+
+  function printPdf() {
+    try {
+      window.print();
+      showToast('استخدم نافذة الطباعة لحفظ PDF', 'info');
+    } catch (error) {
+      showToast(error.message || 'تعذر الطباعة', 'error');
     }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {RANGES.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setRange(item.id)}
-            className="rounded-xl px-4 py-2 text-sm min-h-11"
-            style={{
-              background: range === item.id ? C.sidebar : C.card,
-              color: range === item.id ? C.sidebarTitle : C.ink,
-              border: `1px solid ${C.border}`,
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
+    <div className="os-projects os-reports min-w-0" ref={printRef}>
+      <header className="os-projects-header">
+        <div className="os-projects-header__copy">
+          <h2 className="os-projects-header__title" style={{ fontFamily: FONT_HEAD }}>
+            التقارير
+          </h2>
+          <p className="os-projects-header__sub">الأرباح والمستحقات وربحية المشاريع</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 justify-end print-hide">
+          <GhostButton type="button" onClick={printPdf}>
+            <Printer size={16} strokeWidth={ICON} aria-hidden="true" />
+            طباعة PDF
+          </GhostButton>
+          <GhostButton type="button" onClick={exportCsv}>
+            <Download size={16} strokeWidth={ICON} aria-hidden="true" />
+            تصدير CSV
+          </GhostButton>
+        </div>
+      </header>
+
+      <div className="os-projects-panel os-reports-filters print-hide">
+        <div className="os-reports-filters__grid">
+          <FilterField label="السنة">
+            <select className="os-projects-select" value={year} onChange={(e) => setYear(e.target.value)}>
+              {YEARS.map((y) => (
+                <option key={y} value={String(y)}>{y}</option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="الشهر">
+            <select className="os-projects-select" value={month} onChange={(e) => setMonth(e.target.value)}>
+              <option value="all">كل الشهور</option>
+              {MONTHS.map((label, index) => (
+                <option key={label} value={String(index + 1)}>{label}</option>
+              ))}
+            </select>
+          </FilterField>
+        </div>
+        <p className="os-reports-filters__hint">
+          اختيار شهر محدد يتطلب سنة محددة — كل المبالغ بالعملة المحفوظة مع السجلات (₪).
+        </p>
       </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {REPORTS.map((report) => (
-          <div key={report.id} className="os-surface rounded-2xl p-5" style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: cardShadow }}>
-            <h3 className="font-semibold mb-4" style={{ color: C.ink, fontFamily: FONT_HEAD }}>
-              {report.label}
-            </h3>
-            <PrimaryButton loading={loadingId === report.id} disabled={Boolean(loadingId)} onClick={() => run(report.id)}>
-              <Download size={14} />
-              استخراج
-            </PrimaryButton>
-          </div>
-        ))}
-      </div>
-      {preview ? (
-        <pre className="rounded-2xl p-4 text-xs overflow-auto" style={{ background: C.card, border: `1px solid ${C.border}`, color: C.inkSoft, maxHeight: 320 }}>
-          {preview}
-        </pre>
+
+      {query.isLoading ? <LoadingBlock /> : null}
+      {query.isError ? (
+        <ErrorState message={query.error?.message} onRetry={() => query.refetch()} />
+      ) : null}
+
+      {!query.isLoading && !query.isError ? (
+        <>
+          <section className="os-reports-section">
+            <div className="os-reports-section__head">
+              <span className="os-reports-section__eyebrow">OVERVIEW</span>
+              <h3 className="os-reports-section__title" style={{ fontFamily: FONT_HEAD }}>
+                ملخص الفترة — {periodLabel}
+              </h3>
+            </div>
+            <div className="os-reports-metrics">
+              <MetricCard
+                label="الدخل المحصل"
+                value={money(metrics.income, false)}
+                tone="income"
+              />
+              <MetricCard
+                label="مصاريف"
+                value={money(metrics.expenses, false)}
+                tone="expense"
+              />
+              <MetricCard
+                label="صافي الربح"
+                value={money(metrics.netProfit, false)}
+                tone={metrics.netProfit >= 0 ? 'income' : 'expense'}
+                featured
+              />
+              <MetricCard
+                label="كل المستحقات المفتوحة"
+                value={money(metrics.openReceivables, false)}
+                sub={`${metrics.openInvoiceCount} فاتورة`}
+                tone="expense"
+              />
+            </div>
+          </section>
+
+          <section className="os-reports-section">
+            <div className="os-reports-section__head os-reports-section__head--annual">
+              <h3 className="os-reports-section__title" style={{ fontFamily: FONT_HEAD }}>
+                ملخص السنة — {year}
+              </h3>
+              <span className="os-reports-annual-badge">ANNUAL</span>
+            </div>
+            <div className="os-reports-metrics">
+              <MetricCard
+                label="الأشهر الفعالة"
+                value={String(metrics.activeMonths)}
+                sub={year}
+              />
+              <MetricCard
+                label="متوسط الدخل الشهري"
+                value={money(metrics.avgMonthlyIncome, false)}
+                sub="لكل شهر فعال"
+                tone="income"
+              />
+              <MetricCard
+                label="عدد مشاريع السنة"
+                value={String(metrics.yearProjectCount)}
+                sub={year}
+              />
+              <MetricCard
+                label="عدد الفواتير"
+                value={String(metrics.yearInvoiceCount)}
+                sub={year}
+              />
+            </div>
+          </section>
+        </>
       ) : null}
     </div>
   );
-}
-
-function decodeBase64(value) {
-  try {
-    return decodeURIComponent(escape(atob(value)));
-  } catch {
-    try {
-      return atob(value);
-    } catch {
-      return value;
-    }
-  }
 }

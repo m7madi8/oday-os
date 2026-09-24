@@ -1,54 +1,49 @@
 import {
+  ArchiveX,
   Banknote,
   BarChart3,
-  CircleDollarSign,
   FileText,
-  Files,
   FolderKanban,
   LayoutDashboard,
-  ScrollText,
   Settings as SettingsIcon,
-  Sparkles,
   Users,
   Wallet,
 } from 'lucide-react';
 
 /** صفحات المال — للتمييز في الشريط الجانبي عند الحاجة */
-export const FINANCE_PAGE_IDS = ['invoices', 'payments', 'checks', 'expenses', 'payroll'];
+export const FINANCE_PAGE_IDS = ['invoices', 'payments', 'checks', 'expenses', 'payroll', 'dead-debts'];
 
 export const NAV_GROUPS = [
   {
-    title: 'البداية',
-    items: [{ id: 'dashboard', label: 'اليوم', icon: LayoutDashboard }],
+    title: 'الرئيسية',
+    items: [{ id: 'dashboard', label: 'لوحة التحكم', icon: LayoutDashboard }],
   },
   {
-    title: 'العمل',
+    title: 'المشاريع والفوترة',
     items: [
       { id: 'projects', label: 'المشاريع', icon: FolderKanban },
       { id: 'clients', label: 'العملاء', icon: Users },
-      { id: 'documents', label: 'ملفات المشاريع', icon: Files },
+      { id: 'invoices', label: 'الفواتير', icon: FileText },
     ],
   },
   {
-    title: 'المال',
+    title: 'المصاريف',
     items: [
-      { id: 'invoices', label: 'فواتير العملاء', icon: FileText },
-      { id: 'payments', label: 'تحصيل من العملاء', icon: CircleDollarSign },
-      { id: 'checks', label: 'الشيكات', icon: ScrollText },
-      { id: 'expenses', label: 'مصروف المكتب', icon: Wallet },
-      { id: 'payroll', label: 'رواتب الفريق', icon: Banknote },
+      { id: 'expenses', label: 'المصاريف', icon: Wallet },
+      { id: 'payroll', label: 'الرواتب', icon: Banknote },
     ],
   },
   {
-    title: 'الذكاء الاصطناعي',
-    items: [{ id: 'ai-assistant', label: 'مساعد AI', icon: Sparkles }],
-  },
-  {
-    title: 'النظام',
+    title: 'التقارير',
     items: [
       { id: 'reports', label: 'التقارير', icon: BarChart3 },
       { id: 'settings', label: 'الإعدادات', icon: SettingsIcon },
     ],
+  },
+  {
+    title: 'أرشيف',
+    bottom: true,
+    items: [{ id: 'dead-debts', label: 'ديون ميتة قديمة', icon: ArchiveX }],
   },
 ];
 
@@ -62,8 +57,12 @@ export function mobileTabItems(groups = NAV_GROUPS) {
   const picked = [
     byId.dashboard,
     byId.projects,
-    byId.checks,
+    byId.invoices,
     byId.clients,
   ].filter(Boolean);
   return picked.filter((item, index) => picked.findIndex((entry) => entry.id === item.id) === index);
+}
+
+export function navGroupForPage(groups, pageId) {
+  return groups.find((group) => group.items.some((item) => item.id === pageId));
 }

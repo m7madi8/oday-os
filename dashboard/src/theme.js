@@ -42,7 +42,8 @@ export const FONT_BODY = "'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'IBM Plex 
 export const FONT_LATIN = "'IBM Plex Sans', system-ui, sans-serif";
 export const FONT_MONO = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
 
-export const RADIUS = { sm: 4, md: 8, pill: 999 };
+/** Align with `index.css` radius tokens (--radius-sm, --radius-control, --radius, --radius-lg). */
+export const RADIUS = { xs: 10, sm: 12, md: 14, lg: 18, xl: 24, pill: 999 };
 
 export const cardShadow = 'none';
 
@@ -59,16 +60,17 @@ export const MONTHS_SHORT = [
 ];
 
 export const PAGE_META = {
-  dashboard: { title: 'اليوم', subtitle: 'ما يحتاج متابعته الآن' },
-  projects: { title: 'المشاريع', subtitle: 'أعمال المكتب الحالية' },
-  clients: { title: 'العملاء', subtitle: 'جهات التواصل والأرصدة' },
-  documents: { title: 'ملفات المشاريع', subtitle: 'مخططات، عقود، ومرفقات' },
-  invoices: { title: 'فواتير العملاء', subtitle: 'ما لم يُدفع بعد' },
-  payments: { title: 'تحصيل من العملاء', subtitle: 'دفعات واردة مسجّلة' },
-  checks: { title: 'الشيكات', subtitle: 'إدارة ومتابعة الشيكات الواردة والصادرة وحالات استحقاقها.' },
-  expenses: { title: 'مصروف المكتب', subtitle: 'مصاريف تشغيلية' },
-  payroll: { title: 'رواتب الفريق', subtitle: 'تعريف الموظفين وصرف رواتبهم' },
-  reports: { title: 'التقارير', subtitle: 'ملخص مالي للمكتب' },
+  dashboard: { title: 'لوحة التحكم', subtitle: 'مذكّرات المكتب وأسكتشات المشاريع' },
+  projects: { title: 'المشاريع', subtitle: 'الربحية والميزانية لكل مشروع' },
+  clients: { title: 'العملاء', subtitle: 'كل عميل وكم مشروع أعطاك' },
+  documents: { title: 'الملفات', subtitle: 'مخططات، عقود، ومرفقات المشاريع' },
+  invoices: { title: 'الفواتير', subtitle: 'إصدار الفواتير ومتابعة التحصيل' },
+  'dead-debts': { title: 'ديون ميتة', subtitle: 'مستحقات قديمة غير محتمل تحصيلها' },
+  payments: { title: 'التحصيل', subtitle: 'دفعات واردة مسجّلة' },
+  checks: { title: 'الشيكات', subtitle: 'متابعة الشيكات الواردة والصادرة' },
+  expenses: { title: 'المصاريف', subtitle: 'مصاريف المكتب والمشاريع' },
+  payroll: { title: 'الرواتب', subtitle: 'رواتب الموظفين ودفعات الفريلانسرز' },
+  reports: { title: 'التقارير', subtitle: 'الأرباح والمستحقات وربحية المشاريع' },
   'ai-assistant': { title: 'مساعد AI', subtitle: 'يتوفر قريبًا' },
   settings: { title: 'الإعدادات', subtitle: 'هوية المكتب والنظام' },
 };

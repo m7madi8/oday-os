@@ -69,8 +69,7 @@ export function PrimaryButton({ children, loading, className = '', ...props }) {
   return (
     <button
       type="button"
-      className={`no-drag inline-flex items-center justify-center gap-2 px-4 py-2.5 text-base min-h-11 disabled:opacity-50 ${className}`}
-      style={{ background: C.sidebar, color: C.sidebarTitle, borderRadius: RADIUS.md }}
+      className={`os-btn os-btn--primary no-drag disabled:opacity-50 ${className}`}
       {...props}
     >
       {loading ? <Loader2 size={15} strokeWidth={1.5} className="animate-spin" /> : null}
@@ -83,8 +82,7 @@ export function GhostButton({ children, className = '', ...props }) {
   return (
     <button
       type="button"
-      className={`no-drag inline-flex items-center justify-center gap-2 px-4 py-2.5 text-base min-h-11 ${className}`}
-      style={{ background: C.paper, border: `1px solid ${C.border}`, color: C.ink, borderRadius: RADIUS.md }}
+      className={`os-btn os-btn--ghost no-drag ${className}`}
       {...props}
     >
       {children}
@@ -100,7 +98,7 @@ export function EmptyState({ title, body, action }) {
         background: C.card,
         border: `1px dashed ${C.border}`,
         minHeight: '22rem',
-        borderRadius: RADIUS.md,
+        borderRadius: RADIUS.lg,
       }}
     >
       <p className="text-lg" style={{ color: C.ink, fontFamily: FONT_HEAD, fontWeight: 600 }}>
@@ -134,9 +132,9 @@ export function LoadingBlock() {
   return (
     <div
       className="os-loading-card p-8 flex items-center justify-center gap-2"
-      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: RADIUS.md }}
+      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: RADIUS.lg }}
     >
-      <Loader2 className="os-spin animate-spin" size={15} strokeWidth={2.2} />
+      <Loader2 className="os-spin animate-spin" size={15} strokeWidth={1.65} />
       <span className="text-base" style={{ color: C.inkSoft }}>جارٍ التحميل…</span>
     </div>
   );

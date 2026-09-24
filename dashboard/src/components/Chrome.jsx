@@ -1,20 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, MoreHorizontal, X } from 'lucide-react';
 import { C, FONT_SERIF, RADIUS } from '../theme';
 import { BrandLogo } from './BrandLogo';
 import { BRAND } from '../brand';
-import { mobileTabItems } from '../lib/navigation';
+import { mobileTabItems, navGroupForPage } from '../lib/navigation';
 
 export { TopBar } from './TopBar';
 
-const ICON_STROKE = 1.5;
+const ICON_STROKE = 1.65;
 
-function sectionLabelStyle() {
+function sectionLabelStyle(active = false) {
   return {
-    fontSize: '1rem',
+    fontSize: '0.8125rem',
     fontWeight: 600,
-    letterSpacing: '0.02em',
-    color: C.sidebarText,
+    letterSpacing: '0.05em',
+    color: active ? C.sidebarTitle : C.sidebarTextFaint,
     textTransform: 'none',
   };
 }
@@ -26,7 +26,7 @@ function CollapsibleNavSection({
   onToggle,
   active,
   onNavigate,
-  financeActive,
+  sectionActive,
   full = false,
 }) {
   const count = group.items.length;
@@ -60,10 +60,7 @@ function CollapsibleNavSection({
         className={`no-drag w-full flex items-center justify-between gap-2 px-2.5 py-1.5 min-h-10 ${
           full ? 'flex' : 'flex md:hidden lg:flex'
         }`}
-        style={{
-          ...sectionLabelStyle(),
-          color: financeActive ? C.sidebarTitle : C.sidebarTextFaint,
-        }}
+        style={sectionLabelStyle(sectionActive)}
       >
         <span>{group.title}</span>
         <ChevronDown
@@ -128,23 +125,17 @@ function NavItem({ item, isActive, onNavigate, nested = false, full = false }) {
       onClick={() => onNavigate(item.id)}
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
-      className={`no-drag relative w-full flex items-center gap-2.5 py-2 min-h-11 transition-colors ${
-        nested ? 'ps-6 pe-2.5' : 'px-2.5'
+      className={`app-nav-item no-drag relative w-full flex items-center gap-2.5 py-2 min-h-11 ${
+        nested ? 'ps-5 pe-2.5' : 'px-2.5'
       }`}
       style={{
         background: 'transparent',
         color: isActive ? C.sidebarTitle : C.sidebarText,
-        borderRadius: RADIUS.sm,
       }}
     >
-      {isActive ? (
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-2 start-0 w-px"
-          style={{ background: C.lime }}
-        />
-      ) : null}
-      <Icon size={20} strokeWidth={ICON_STROKE} className={iconClass} aria-hidden="true" />
+      <span className="app-nav-item__icon" aria-hidden="true">
+        <Icon size={18} strokeWidth={ICON_STROKE} className={iconClass} />
+      </span>
       <span className={`${labelClass} text-base`}>{item.label}</span>
     </button>
   );
@@ -169,9 +160,64 @@ export function Sidebar({
     if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
 
+  useEffect(() => {
+    const group = navGroupForPage(navGroups, active);
+    if (!group?.collapsible) return;
+    setExpanded((prev) => (prev[group.title] ? prev : { ...prev, [group.title]: true }));
+  }, [active, navGroups]);
+
   function handleNavigate(id) {
     onNavigate(id);
     onCloseMenu?.();
+  }
+
+  const mainNavGroups = useMemo(() => navGroups.filter((group) => !group.bottom), [navGroups]);
+  const bottomNavGroups = useMemo(() => navGroups.filter((group) => group.bottom), [navGroups]);
+
+  function renderNavSections(groups) {
+    return groups.map((group) => {
+      const isCollapsible = Boolean(group.collapsible);
+      const isOpen = isCollapsible ? expanded[group.title] : true;
+      const isClosing = isCollapsible ? closing[group.title] : false;
+      const sectionActive = group.items.some((item) => item.id === active);
+
+      return (
+        <div key={group.title}>
+          {isCollapsible ? (
+            <CollapsibleNavSection
+              group={group}
+              isExpanded={isOpen}
+              isClosing={isClosing}
+              onToggle={() => toggleGroup(group.title, group.items.length)}
+              active={active}
+              onNavigate={handleNavigate}
+              sectionActive={sectionActive}
+              full={desktop}
+            />
+          ) : (
+            <>
+              <div
+                className={desktop ? 'block px-2.5 mb-1' : 'block md:hidden lg:block px-2.5 mb-1'}
+                style={sectionLabelStyle(sectionActive)}
+              >
+                {group.title}
+              </div>
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <NavItem
+                    key={item.id}
+                    item={item}
+                    isActive={active === item.id}
+                    onNavigate={handleNavigate}
+                    full={desktop}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      );
+    });
   }
 
   function toggleGroup(title, itemCount = 5) {
@@ -275,54 +321,24 @@ export function Sidebar({
           />
         </div>
 
-        <nav
-          className={`app-sidebar-scroll no-drag flex-1 min-h-0 px-3 pt-1 pb-2 space-y-3 overflow-y-auto overflow-x-hidden ${desktop ? '' : 'md:px-1.5 lg:px-3'}`}
-          aria-label="القائمة الرئيسية"
-        >
-          {navGroups.map((group) => {
-            const isCollapsible = Boolean(group.collapsible);
-            const isOpen = isCollapsible ? expanded[group.title] : true;
-            const isClosing = isCollapsible ? closing[group.title] : false;
-            const financeActive = false;
+        <div className="flex flex-col flex-1 min-h-0">
+          <nav
+            className={`app-sidebar-scroll no-drag flex-1 min-h-0 px-3 pt-1 pb-2 space-y-2 overflow-y-auto overflow-x-hidden ${desktop ? '' : 'md:px-1.5 lg:px-3'}`}
+            aria-label="القائمة الرئيسية"
+          >
+            {renderNavSections(mainNavGroups)}
+          </nav>
 
-            return (
-              <div key={group.title}>
-                {isCollapsible ? (
-                  <CollapsibleNavSection
-                    group={group}
-                    isExpanded={isOpen}
-                    isClosing={isClosing}
-                    onToggle={() => toggleGroup(group.title, group.items.length)}
-                    active={active}
-                    onNavigate={handleNavigate}
-                    financeActive={financeActive}
-                    full={desktop}
-                  />
-                ) : (
-                  <>
-                    <div
-                      className={desktop ? 'block px-2.5 mb-1' : 'block md:hidden lg:block px-2.5 mb-1'}
-                      style={sectionLabelStyle()}
-                    >
-                      {group.title}
-                    </div>
-                    <div className="space-y-0.5">
-                      {group.items.map((item) => (
-                        <NavItem
-                          key={item.id}
-                          item={item}
-                          isActive={active === item.id}
-                          onNavigate={handleNavigate}
-                          full={desktop}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </nav>
+          {bottomNavGroups.length ? (
+            <div
+              className={`app-sidebar-bottom no-drag shrink-0 px-3 pt-2 pb-2 space-y-2 ${desktop ? '' : 'md:px-1.5 lg:px-3'}`}
+              style={{ borderTop: `1px solid ${C.sidebarLine}` }}
+              aria-label="أقسام إضافية"
+            >
+              {renderNavSections(bottomNavGroups)}
+            </div>
+          ) : null}
+        </div>
 
         <div
           className={desktop ? 'px-5 py-4 block shrink-0' : 'px-5 py-4 block md:hidden lg:block shrink-0'}

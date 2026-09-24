@@ -29,6 +29,7 @@ export const PAGE_PERMISSIONS = {
   clients: 'view_client',
   documents: 'view_client',
   invoices: 'view_invoice',
+  'dead-debts': 'view_invoice',
   payments: 'view_payment',
   checks: 'view_payment',
   expenses: 'view_expense',

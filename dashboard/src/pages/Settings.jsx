@@ -1,35 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  AlertCircle,
   Briefcase,
   Check,
   Download,
   GripVertical,
   Loader2,
   Plus,
-  RefreshCw,
   Trash2,
   Upload,
   Wallet,
 } from 'lucide-react';
 import { BRAND } from '../brand';
-import { C, CURRENCIES, FONT_HEAD, MONTHS, PALETTES, getAppCurrency } from '../theme';
+import { C, CURRENCIES, FONT_HEAD, PALETTES } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
-import { CheckRow, Field, SectionCard, Segmented, SelectInput, TextArea, TextInput } from '../components/settings/Fields';
+import { Field, SectionCard, Segmented, SelectInput, TextArea, TextInput } from '../components/settings/Fields';
 import { COUNTRY_CODES, createId } from '../lib/officeSettings';
-import { exchangeLabels, fetchOfficeRates } from '../lib/frankfurter';
 import { getItem, setItem } from '../lib/storage';
 import { BackupPanel } from '../components/backup/BackupPanel';
-import { ChequePrintCalibrationFields } from '../components/cheques/ChequePrintCalibrationFields';
-import { ChequeBankLogosPanel } from '../components/cheques/ChequeBankLogosPanel';
 
 const TOC = [
   { id: 'identity', label: 'بيانات المكتب' },
   { id: 'payments', label: 'البنوك والدفع' },
   { id: 'services', label: 'أتعاب الخدمات' },
   { id: 'expenses', label: 'فئات المصاريف' },
-  { id: 'taxes', label: 'الضرائب المحلية' },
-  { id: 'accounting', label: 'المحاسبة' },
   { id: 'backup', label: 'النسخ الاحتياطي' },
 ];
 
@@ -47,13 +40,8 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
   const [logoError, setLogoError] = useState('');
   const [importError, setImportError] = useState('');
   const [confirmImport, setConfirmImport] = useState(null);
-  const [rateStatus, setRateStatus] = useState('idle');
-  const [rateNotice, setRateNotice] = useState('');
   const fileLogoRef = useRef(null);
   const fileBackupRef = useRef(null);
-
-  const currency = CURRENCIES[settings.paymentCurrency] || CURRENCIES.ils;
-  const pairs = exchangeLabels(settings.paymentCurrency);
 
   useEffect(() => {
     const root = document.querySelector('[data-app-scroll]');
@@ -82,45 +70,8 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
     }
   }, [loaded]);
 
-  const settingsRef = useRef(settings);
-  settingsRef.current = settings;
-
-  const refreshRates = useCallback(async () => {
-    setRateStatus('loading');
-    setRateNotice('');
-    try {
-      const result = await fetchOfficeRates(settingsRef.current.paymentCurrency);
-      onChange({
-        ...settingsRef.current,
-        exchangeUsd: result.primary,
-        exchangeSecondary: result.secondary,
-        exchangeUpdatedAt: result.updatedAt,
-        exchangeDate: result.date,
-      });
-      setRateNotice('');
-      setRateStatus('ok');
-    } catch {
-      setRateStatus('error');
-    }
-  }, [onChange]);
-
-  useEffect(() => {
-    if (!loaded) return undefined;
-    refreshRates();
-    return undefined;
-  }, [loaded, settings.paymentCurrency, refreshRates]);
-
   function patch(partial) {
     onChange({ ...settings, ...partial });
-  }
-
-  function patchTax(key, partial) {
-    patch({
-      taxes: {
-        ...settings.taxes,
-        [key]: { ...settings.taxes[key], ...partial },
-      },
-    });
   }
 
   function addService() {
@@ -234,22 +185,6 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
     }
   }
 
-  const exchangeHint = useMemo(() => {
-    if (rateStatus === 'loading') return 'جارِ جلب الأسعار من Frankfurter...';
-    if (rateStatus === 'error') return 'تعذر الاتصال بـ Frankfurter. تظهر آخر أسعار محفوظة إن وُجدت.';
-    if (settings.exchangeDate) {
-      return `المصدر: Frankfurter · ECB — تاريخ السعر ${settings.exchangeDate}`;
-    }
-    if (settings.exchangeUpdatedAt) {
-      try {
-        return `آخر تحديث محلي: ${new Date(settings.exchangeUpdatedAt).toLocaleDateString('ar-EG')}`;
-      } catch {
-        return '';
-      }
-    }
-    return 'تُجلب الأسعار تلقائيًا من Frankfurter عند فتح الصفحة.';
-  }, [rateStatus, settings.exchangeDate, settings.exchangeUpdatedAt]);
-
   const saveLabel = status === 'saving' ? 'جارِ الحفظ' : status === 'saved' ? 'تم الحفظ' : 'حفظ الإعدادات';
 
   return (
@@ -263,7 +198,7 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
             إعدادات المكتب
           </h1>
           <p className="phone-hide text-base mt-1 max-w-xl" style={{ color: C.inkSoft }}>
-            بيانات المكتب الهندسي، الأتعاب، العملة، والضرائب الفلسطينية — تُحفظ على هذا الجهاز.
+            بيانات المكتب الهندسي، الأتعاب، والعملة — تُحفظ على هذا الجهاز.
           </p>
         </div>
         <button
@@ -471,14 +406,11 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
                 <Segmented
                   ariaLabel="عملة الدفع"
                   value={settings.paymentCurrency}
-                  onChange={(paymentCurrency) => patch({ paymentCurrency, exchangeUpdatedAt: Date.now() })}
+                  onChange={(paymentCurrency) => patch({ paymentCurrency })}
                   options={Object.values(CURRENCIES).map((item) => ({ id: item.id, label: item.label }))}
                 />
               </Field>
             </div>
-
-            <ChequeBankLogosPanel />
-            <ChequePrintCalibrationFields />
 
             <div className="mt-5 rounded-2xl p-4" style={{ background: C.paper, border: `1px solid ${C.border}` }}>
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -734,214 +666,8 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
           </SectionCard>
 
           <SectionCard
-            id="rates"
-            num={6}
-            title={`أسعار الصرف — ${currency.label}`}
-            hint="تُجلب تلقائيًا من Frankfurter وتُستخدم عند تحويل العملات في الفواتير."
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <p className="text-[12px]" style={{ color: C.inkSoft }}>
-                المصدر: البنك المركزي الأوروبي عبر Frankfurter
-              </p>
-              <button
-                type="button"
-                onClick={refreshRates}
-                disabled={rateStatus === 'loading'}
-                className="inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm min-h-11"
-                style={{ background: C.paper, border: `1px solid ${C.border}`, color: C.ink }}
-              >
-                {rateStatus === 'loading'
-                  ? <Loader2 size={15} className="animate-spin" aria-hidden="true" />
-                  : <RefreshCw size={15} aria-hidden="true" />}
-                تحديث الأسعار
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label={pairs.primary} htmlFor="rate-usd">
-                <TextInput
-                  id="rate-usd"
-                  readOnly
-                  value={settings.exchangeUsd}
-                  placeholder="—"
-                  className="tabular-nums"
-                  aria-live="polite"
-                />
-              </Field>
-              <Field label={pairs.secondary} htmlFor="rate-secondary">
-                <TextInput
-                  id="rate-secondary"
-                  readOnly
-                  value={settings.exchangeSecondary}
-                  placeholder="—"
-                  className="tabular-nums"
-                />
-              </Field>
-            </div>
-            <p className="text-[11px] mt-3 flex items-start gap-1.5" style={{ color: rateStatus === 'error' ? C.burgundy : C.inkFaint }}>
-              {rateStatus === 'error' ? <AlertCircle size={13} className="mt-0.5 shrink-0" aria-hidden="true" /> : null}
-              <span>{exchangeHint}</span>
-            </p>
-            {rateNotice ? (
-              <p className="text-[11px] mt-1.5" style={{ color: C.inkSoft }}>
-                {rateNotice}
-              </p>
-            ) : null}
-          </SectionCard>
-
-          <SectionCard
-            id="taxes"
-            num={7}
-            title="الضرائب والرسوم المحلية"
-            hint="ضريبة القيمة المضافة 16% وفق القانون الفلسطيني، ورسوم البلدية حسب الاختصاص."
-          >
-            <div className="space-y-2">
-              <CheckRow
-                checked={settings.taxes.vat.on}
-                onChange={(e) => patchTax('vat', { on: e.target.checked })}
-                label="ضريبة القيمة المضافة"
-              >
-                <div className="w-24">
-                  <TextInput
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={settings.taxes.vat.rate}
-                    onChange={(e) => patchTax('vat', { rate: e.target.value })}
-                    aria-label="نسبة ضريبة القيمة المضافة"
-                    className="tabular-nums text-left"
-                    dir="ltr"
-                  />
-                </div>
-                <span className="text-xs" style={{ color: C.inkFaint }}>%</span>
-              </CheckRow>
-              <CheckRow
-                checked={settings.taxes.income.on}
-                onChange={(e) => patchTax('income', { on: e.target.checked })}
-                label="ضريبة الدخل"
-              >
-                <div className="w-24">
-                  <TextInput
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={settings.taxes.income.rate}
-                    onChange={(e) => patchTax('income', { rate: e.target.value })}
-                    aria-label="نسبة ضريبة الدخل"
-                    className="tabular-nums text-left"
-                    dir="ltr"
-                  />
-                </div>
-                <span className="text-xs" style={{ color: C.inkFaint }}>%</span>
-              </CheckRow>
-              <CheckRow
-                checked={settings.taxes.municipal.on}
-                onChange={(e) => patchTax('municipal', { on: e.target.checked })}
-                label="رسوم بلدية / ترخيص"
-              >
-                <div className="w-24">
-                  <TextInput
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={settings.taxes.municipal.rate}
-                    onChange={(e) => patchTax('municipal', { rate: e.target.value })}
-                    aria-label="نسبة رسوم البلدية"
-                    className="tabular-nums text-left"
-                    dir="ltr"
-                  />
-                </div>
-                <span className="text-xs" style={{ color: C.inkFaint }}>%</span>
-              </CheckRow>
-              <CheckRow
-                checked={settings.taxes.other.on}
-                onChange={(e) => patchTax('other', { on: e.target.checked })}
-                label="أخرى"
-              >
-                <div className="w-32">
-                  <TextInput
-                    value={settings.taxes.other.label}
-                    onChange={(e) => patchTax('other', { label: e.target.value })}
-                    placeholder="الوصف"
-                    aria-label="وصف ضريبة أخرى"
-                  />
-                </div>
-                <div className="w-24">
-                  <TextInput
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={settings.taxes.other.rate}
-                    onChange={(e) => patchTax('other', { rate: e.target.value })}
-                    aria-label="نسبة ضريبة أخرى"
-                    className="tabular-nums text-left"
-                    dir="ltr"
-                  />
-                </div>
-                <span className="text-xs" style={{ color: C.inkFaint }}>%</span>
-              </CheckRow>
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            id="accounting"
-            num={8}
-            title="المحاسبة والفوترة"
-            hint="ترقيم فواتير الأتعاب، بداية السنة المالية، ومدة السداد الافتراضية."
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="بداية السنة المالية" htmlFor="fiscal-start">
-                <SelectInput
-                  id="fiscal-start"
-                  value={settings.fiscalYearStart}
-                  onChange={(e) => patch({ fiscalYearStart: Number(e.target.value) })}
-                >
-                  {MONTHS.map((name, index) => (
-                    <option key={name} value={index + 1}>
-                      {name}
-                    </option>
-                  ))}
-                </SelectInput>
-              </Field>
-              <Field label="مدة السداد الافتراضية (يوم)" htmlFor="payment-terms">
-                <TextInput
-                  id="payment-terms"
-                  type="number"
-                  min="0"
-                  value={settings.paymentTermsDays}
-                  onChange={(e) => patch({ paymentTermsDays: e.target.value })}
-                  className="tabular-nums"
-                />
-              </Field>
-              <Field label="بادئة رقم الفاتورة" htmlFor="invoice-prefix">
-                <TextInput
-                  id="invoice-prefix"
-                  value={settings.invoicePrefix}
-                  onChange={(e) => patch({ invoicePrefix: e.target.value })}
-                  placeholder="ع.أ"
-                  dir="ltr"
-                  className="text-left"
-                />
-              </Field>
-              <Field label="الرقم التالي" htmlFor="invoice-next">
-                <TextInput
-                  id="invoice-next"
-                  type="number"
-                  min="1"
-                  value={settings.invoiceNext}
-                  onChange={(e) => patch({ invoiceNext: e.target.value })}
-                  className="tabular-nums"
-                />
-              </Field>
-            </div>
-            <p className="text-[12px] mt-3 tabular-nums" style={{ color: C.inkFaint }}>
-              معاينة: {settings.invoicePrefix}-{String(Number(settings.invoiceNext) || 1).padStart(3, '0')}
-              {' · '}العملة الحالية {getAppCurrency().label}
-            </p>
-          </SectionCard>
-
-          <SectionCard
             id="backup"
-            num={9}
+            num={6}
             title="النسخ والاستيراد"
             hint="نسخ احتياطي مشفّر إلى Google Drive ومجلد محلي، مع تصدير JSON سريع للإعدادات."
           >

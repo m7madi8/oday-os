@@ -2,6 +2,7 @@ node_modules
 dist
 dist-electron
 release
+*.rar
 .DS_Store
 .env
 # Local-only files under data/ (bank registry is tracked)
