@@ -18,6 +18,24 @@ export function createId() {
   return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+/** أنواع المشاريع (الخدمات) — تُدار من الإعدادات › أتعاب الخدمات */
+export const DEFAULT_PROJECT_SERVICES = [
+  { id: 'svc-interior', name: 'interior design', hours: '', rate: '' },
+  { id: 'svc-exterior', name: 'exterior design', hours: '', rate: '' },
+  { id: 'svc-ai-architect', name: 'Ai architect', hours: '', rate: '' },
+  { id: 'svc-architect-dron', name: 'Architect Dron', hours: '', rate: '' },
+];
+
+export function projectServiceNames(projectTypes = []) {
+  return (Array.isArray(projectTypes) ? projectTypes : [])
+    .map((row) => String(row?.name || '').trim())
+    .filter(Boolean);
+}
+
+export function defaultProjectServicesList() {
+  return DEFAULT_PROJECT_SERVICES.map((row) => ({ ...row, id: createId() }));
+}
+
 export const DEFAULT_OFFICE_SETTINGS = {
   officeName: BRAND.owner,
   language: 'ar',
@@ -35,7 +53,7 @@ export const DEFAULT_OFFICE_SETTINGS = {
   useSystemLogo: true,
   customLogo: '',
   paletteId: 'graphite-brass',
-  projectTypes: [],
+  projectTypes: defaultProjectServicesList(),
   expenseCategories: [],
   exchangeUsd: '',
   exchangeSecondary: '',
@@ -78,12 +96,16 @@ export function mergeOfficeSettings(raw) {
     paletteId: asText(source.paletteId, 'graphite-brass') === 'dark-blueprint'
       ? 'graphite-brass'
       : asText(source.paletteId, 'graphite-brass'),
-    projectTypes: asList(source.projectTypes).map((row) => ({
-      id: asText(row?.id, createId()),
-      name: asText(row?.name),
-      hours: asText(row?.hours),
-      rate: asText(row?.rate),
-    })),
+    projectTypes: (() => {
+      const list = asList(source.projectTypes).map((row) => ({
+        id: asText(row?.id, createId()),
+        name: asText(row?.name),
+        hours: asText(row?.hours),
+        rate: asText(row?.rate),
+      }));
+      if (list.length > 0) return list;
+      return defaultProjectServicesList();
+    })(),
     expenseCategories: asList(source.expenseCategories).map((row) => ({
       id: asText(row?.id, createId()),
       name: asText(row?.name),

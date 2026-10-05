@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Download, Printer } from 'lucide-react';
+import { Download, Package, Printer, Users } from 'lucide-react';
+import { listClients } from '../lib/api/clients';
 import { listExpenses } from '../lib/api/expenses';
 import { listInvoices } from '../lib/api/invoices';
 import { listPayments } from '../lib/api/payments';
@@ -45,18 +46,41 @@ function MetricCard({ label, value, sub, tone = 'default', featured = false }) {
   );
 }
 
+function ReportPanel({ title, children, className = '' }) {
+  return (
+    <section className={`os-reports-panel ${className}`.trim()}>
+      <h4 className="os-reports-panel__title" style={{ fontFamily: FONT_HEAD }}>{title}</h4>
+      {children}
+    </section>
+  );
+}
+
+function ReportEmpty({ icon: Icon, title, body }) {
+  return (
+    <div className="os-reports-empty">
+      <span className="os-reports-empty__icon" aria-hidden="true">
+        <Icon size={28} strokeWidth={1.25} />
+      </span>
+      <p className="os-reports-empty__title">{title}</p>
+      {body ? <p className="os-reports-empty__body">{body}</p> : null}
+    </div>
+  );
+}
+
 async function loadReportSource() {
-  const [payments, expenses, invoices, projects] = await Promise.all([
+  const [payments, expenses, invoices, projects, clients] = await Promise.all([
     listPayments({ per_page: 500 }),
     listExpenses({ per_page: 500 }),
-    listInvoices({ per_page: 500 }),
-    listProjects({ per_page: 500 }),
+    listInvoices({ per_page: 500, include: 'client' }),
+    listProjects({ per_page: 500, include: 'client' }),
+    listClients({ per_page: 500 }),
   ]);
   return {
     payments: payments?.data || [],
     expenses: expenses?.data || [],
     invoices: invoices?.data || [],
     projects: projects?.data || [],
+    clients: clients?.data || [],
   };
 }
 
@@ -73,10 +97,8 @@ export function Reports() {
   const periodLabel = useMemo(() => periodTitle(year, month, MONTHS), [year, month]);
 
   const metrics = useMemo(() => {
-    if (!query.data) {
-      return computeReportMetrics({}, { year, month });
-    }
-    return computeReportMetrics(query.data, { year, month });
+    const payload = query.data || {};
+    return computeReportMetrics(payload, { year, month }, MONTHS);
   }, [query.data, year, month]);
 
   async function exportCsv() {
@@ -98,6 +120,10 @@ export function Reports() {
       showToast(error.message || 'تعذر الطباعة', 'error');
     }
   }
+
+  const clientsWithActivity = metrics.clientRows.filter(
+    (row) => row.income > 0 || row.projectCount > 0,
+  );
 
   return (
     <div className="os-projects os-reports min-w-0" ref={printRef}>
@@ -214,6 +240,127 @@ export function Reports() {
               />
             </div>
           </section>
+
+          <section className="os-reports-section">
+            <div className="os-reports-section__head">
+              <h3 className="os-reports-section__title" style={{ fontFamily: FONT_HEAD }}>
+                التسلسل الشهري — {year}
+              </h3>
+            </div>
+            <div className="os-reports-table-wrap">
+              <table className="os-reports-table">
+                <thead>
+                  <tr>
+                    <th scope="col">شهر</th>
+                    <th scope="col">الدخل</th>
+                    <th scope="col">مصاريف</th>
+                    <th scope="col">الربح</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.monthlySeries.map((row) => (
+                    <tr key={row.month}>
+                      <td>{row.label}</td>
+                      <td className="os-num is-income">{money(row.income, false)}</td>
+                      <td className="os-num is-expense">{money(row.expenses, false)}</td>
+                      <td className={`os-num ${row.profit >= 0 ? 'is-income' : 'is-expense'}`}>
+                        {money(row.profit, false)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div className="os-reports-grid">
+            <ReportPanel title="قائمة الأرباح والخسائر">
+              <ul className="os-reports-kv">
+                <li>
+                  <span>الدخل المحصل</span>
+                  <strong className="os-num is-income">{money(metrics.income, false)}</strong>
+                </li>
+                <li>
+                  <span>مصاريف</span>
+                  <strong className="os-num is-expense">{money(metrics.expenses, false)}</strong>
+                </li>
+                <li className="is-total">
+                  <span>صافي الربح</span>
+                  <strong className={`os-num ${metrics.netProfit >= 0 ? 'is-income' : 'is-expense'}`}>
+                    {money(metrics.netProfit, false)}
+                  </strong>
+                </li>
+              </ul>
+            </ReportPanel>
+
+            <ReportPanel title="تقرير العملاء">
+              {clientsWithActivity.length === 0 ? (
+                <ReportEmpty
+                  icon={Users}
+                  title="ما في عملاء بعد"
+                  body="أضف عملاء ومشاريع لعرض ملخص الدخل لكل عميل."
+                />
+              ) : (
+                <ul className="os-reports-list">
+                  {clientsWithActivity.slice(0, 8).map((row) => (
+                    <li key={row.id}>
+                      <div>
+                        <strong>{row.name}</strong>
+                        <span>{row.projectCount} مشروع</span>
+                      </div>
+                      <strong className="os-num is-income">{money(row.income, false)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </ReportPanel>
+
+            <ReportPanel title="المستحقات غير المحصلة">
+              {metrics.openInvoices.length === 0 ? (
+                <ReportEmpty
+                  icon={Package}
+                  title="لا مستحقات مفتوحة"
+                  body="كل الفواتير محصّلة أو لا توجد فواتير بعد."
+                />
+              ) : (
+                <ul className="os-reports-list">
+                  {metrics.openInvoices.slice(0, 8).map((row) => (
+                    <li key={row.id}>
+                      <div>
+                        <strong>{row.clientName}</strong>
+                        <span>{row.number} · {row.dueDate}</span>
+                      </div>
+                      <strong className="os-num is-expense">{money(row.balance, false)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </ReportPanel>
+
+            <ReportPanel title="ربحية المشاريع">
+              {metrics.projectProfitRows.length === 0 ? (
+                <ReportEmpty
+                  icon={Package}
+                  title="لا بيانات ربحية"
+                  body="اربط مدفوعات ومصاريف بالمشاريع خلال السنة المختارة."
+                />
+              ) : (
+                <ul className="os-reports-list">
+                  {metrics.projectProfitRows.slice(0, 8).map((row) => (
+                    <li key={row.id}>
+                      <div>
+                        <strong>{row.name}</strong>
+                        <span>{row.type}</span>
+                      </div>
+                      <strong className={`os-num ${row.profit >= 0 ? 'is-income' : 'is-expense'}`}>
+                        {money(row.profit, false)}
+                      </strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </ReportPanel>
+          </div>
         </>
       ) : null}
     </div>

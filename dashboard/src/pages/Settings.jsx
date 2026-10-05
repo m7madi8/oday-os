@@ -21,7 +21,7 @@ import { BackupPanel } from '../components/backup/BackupPanel';
 const TOC = [
   { id: 'identity', label: 'بيانات المكتب' },
   { id: 'payments', label: 'البنوك والدفع' },
-  { id: 'services', label: 'أتعاب الخدمات' },
+  { id: 'services', label: 'أنواع المشاريع والخدمات' },
   { id: 'expenses', label: 'فئات المصاريف' },
   { id: 'backup', label: 'النسخ الاحتياطي' },
 ];
@@ -186,6 +186,7 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
   }
 
   const saveLabel = status === 'saving' ? 'جارِ الحفظ' : status === 'saved' ? 'تم الحفظ' : 'حفظ الإعدادات';
+  const currency = CURRENCIES[settings.paymentCurrency] || CURRENCIES.ils;
 
   return (
     <div className="space-y-5 min-w-0 pb-10">
@@ -508,8 +509,8 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
           <SectionCard
             id="services"
             num={4}
-            title="أتعاب الخدمات الهندسية"
-            hint="عرّف مراحل العمل وأتعابها — تصميم، مخططات، إشراف، أو تنسيق مواقع."
+            title="أنواع المشاريع وأتعاب الخدمات"
+            hint="أسماء الخدمات تظهر في فلاتر المشاريع وعند إنشاء مشروع. يمكنك إضافة ساعات/أتعاب لكل خدمة."
           >
             {settings.projectTypes.length === 0 ? (
               <div

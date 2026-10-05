@@ -323,6 +323,7 @@ export default function App() {
               ) : page === 'projects' ? (
                 <Projects
                   hidden={hidden}
+                  projectServices={office.projectTypes}
                   onOpenProject={(id) => setProjectDetailId(id)}
                 />
               ) : page === 'clients' ? (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   LayoutGrid,
@@ -19,12 +19,18 @@ import { ErrorState, GhostButton, LoadingBlock, PrimaryButton } from '../compone
 import { TextInput } from '../components/settings/Fields';
 import { showToast } from '../lib/toast';
 import { todayIso } from '../lib/labels';
+import { projectServiceNames } from '../lib/officeSettings';
 import {
   PROJECT_SORT_OPTIONS,
   PROJECT_STATUS_OPTIONS,
   collectProjectTypes,
   filterAndSortProjects,
 } from '../lib/projects/projectFilters';
+import {
+  projectStatusLabel,
+  projectStatusStorageValue,
+  resolveProjectStatus,
+} from '../lib/projects/projectMeta';
 
 const ICON = 1.5;
 
@@ -41,7 +47,7 @@ function selectClassName() {
   return 'os-projects-select';
 }
 
-export function Projects({ hidden, onOpenProject }) {
+export function Projects({ hidden, onOpenProject, projectServices = [] }) {
   const { session } = useAuth();
   const [search, setSearch] = useState('');
   const [year, setYear] = useState(String(new Date().getFullYear()));
@@ -61,6 +67,20 @@ export function Projects({ hidden, onOpenProject }) {
   const [clientEmail, setClientEmail] = useState('');
   const [amount, setAmount] = useState('');
   const [due, setDue] = useState('');
+  const [projectType, setProjectType] = useState('');
+  const [projectStatus, setProjectStatus] = useState('active');
+
+  const configuredServiceNames = useMemo(
+    () => projectServiceNames(projectServices),
+    [projectServices],
+  );
+
+  useEffect(() => {
+    if (!configuredServiceNames.length) return;
+    setProjectType((current) => (
+      current && configuredServiceNames.includes(current) ? current : configuredServiceNames[0]
+    ));
+  }, [configuredServiceNames]);
 
   const query = useQuery({
     queryKey: keys.projects('all-list'),
@@ -69,7 +89,11 @@ export function Projects({ hidden, onOpenProject }) {
   const clients = useQuery({ queryKey: keys.clients(), queryFn: () => listClients({ per_page: 200 }) });
 
   const allRows = query.data?.data || [];
-  const typeOptions = useMemo(() => collectProjectTypes(allRows), [allRows]);
+  const typeOptions = useMemo(
+    () => collectProjectTypes(allRows, configuredServiceNames),
+    [allRows, configuredServiceNames],
+  );
+  const typeFilterOptions = typeOptions;
 
   const filtered = useMemo(
     () =>
@@ -106,6 +130,8 @@ export function Projects({ hidden, onOpenProject }) {
         client_id: resolvedClientId,
         budgeted_amount: Number(amount) || 0,
         due_date: due || undefined,
+        custom_value1: projectType || undefined,
+        custom_value2: projectStatusStorageValue(projectStatus) || undefined,
       });
     },
     onSuccess: async () => {
@@ -119,6 +145,8 @@ export function Projects({ hidden, onOpenProject }) {
       setClientEmail('');
       setAmount('');
       setDue('');
+      setProjectType(configuredServiceNames[0] || '');
+      setProjectStatus('active');
       showToast(clientMode === 'new' ? 'تم حفظ المشروع والعميل' : 'تم حفظ المشروع', 'ok');
     },
     onError: (error) => showToast(error.message, 'error'),
@@ -166,7 +194,7 @@ export function Projects({ hidden, onOpenProject }) {
           <select className={selectClassName()} value={type} onChange={(e) => setType(e.target.value)}>
             <option value="all">كل الأنواع</option>
             <option value="none">بدون نوع</option>
-            {typeOptions.map((item) => (
+            {typeFilterOptions.map((item) => (
               <option key={item} value={item}>{item}</option>
             ))}
           </select>
@@ -268,6 +296,7 @@ export function Projects({ hidden, onOpenProject }) {
               <span>المشروع</span>
               <span>العميل</span>
               <span>النوع</span>
+              <span>الحالة</span>
               <span>الميزانية</span>
               <span>الاستحقاق</span>
             </div>
@@ -282,6 +311,7 @@ export function Projects({ hidden, onOpenProject }) {
                 <span className="os-projects-row__name">{row.name || '—'}</span>
                 <span>{row.client?.name || '—'}</span>
                 <span className="os-projects-row__muted">{row.custom_value1 || '—'}</span>
+                <span className="os-projects-status-pill">{projectStatusLabel(resolveProjectStatus(row))}</span>
                 <span className="os-num">{money(row.budgeted_amount || 0, hidden)}</span>
                 <span className="os-projects-row__muted">{row.due_date || '—'}</span>
               </button>
@@ -301,6 +331,7 @@ export function Projects({ hidden, onOpenProject }) {
                 <div className="os-projects-card__head">
                   <strong>{row.name || '—'}</strong>
                   {row.custom_value1 ? <span className="os-projects-card__tag">{row.custom_value1}</span> : null}
+                  <span className="os-projects-status-pill">{projectStatusLabel(resolveProjectStatus(row))}</span>
                 </div>
                 <p className="os-projects-card__client">{row.client?.name || '—'}</p>
                 <div className="os-projects-card__meta">
@@ -341,6 +372,34 @@ export function Projects({ hidden, onOpenProject }) {
           ) : (
             <ClientSelect clients={clients.data?.data} value={newClientId} onChange={setNewClientId} />
           )}
+        </Field>
+        <Field label="نوع المشروع">
+          {configuredServiceNames.length === 0 ? (
+            <p className="text-base" style={{ color: C.inkSoft }}>
+              عرّف أنواع الخدمات من الإعدادات › أتعاب الخدمات.
+            </p>
+          ) : (
+            <select
+              className={selectClassName()}
+              value={projectType}
+              onChange={(event) => setProjectType(event.target.value)}
+            >
+              {configuredServiceNames.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          )}
+        </Field>
+        <Field label="حالة المشروع">
+          <select
+            className={selectClassName()}
+            value={projectStatus}
+            onChange={(event) => setProjectStatus(event.target.value)}
+          >
+            {PROJECT_STATUS_OPTIONS.filter((item) => item.id !== 'all').map((item) => (
+              <option key={item.id} value={item.id}>{item.label}</option>
+            ))}
+          </select>
         </Field>
         <Field label="قيمة المشروع">
           <TextInput value={amount} onChange={(event) => setAmount(event.target.value)} className="tabular-nums" />

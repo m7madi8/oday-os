@@ -1,14 +1,12 @@
+import { getProjectTypeFilterOptions, resolveProjectStatus } from './projectMeta';
+
+export { PROJECT_STATUS_OPTIONS, resolveProjectStatus } from './projectMeta';
+
 export const PROJECT_SORT_OPTIONS = [
   { id: 'newest', label: 'الأحدث أولاً' },
   { id: 'oldest', label: 'الأقدم أولاً' },
   { id: 'name', label: 'حسب الاسم' },
   { id: 'budget', label: 'حسب القيمة' },
-];
-
-export const PROJECT_STATUS_OPTIONS = [
-  { id: 'all', label: 'كل الحالات' },
-  { id: 'active', label: 'نشط' },
-  { id: 'archived', label: 'مؤرشف' },
 ];
 
 function projectMillis(row) {
@@ -22,13 +20,8 @@ function projectDate(row) {
   return ms ? new Date(ms) : null;
 }
 
-export function collectProjectTypes(rows = []) {
-  const set = new Set();
-  rows.forEach((row) => {
-    const type = String(row?.custom_value1 || '').trim();
-    if (type) set.add(type);
-  });
-  return [...set].sort((a, b) => a.localeCompare(b, 'ar'));
+export function collectProjectTypes(rows = [], configuredNames = []) {
+  return getProjectTypeFilterOptions(rows, configuredNames).sort((a, b) => a.localeCompare(b, 'ar'));
 }
 
 export function filterAndSortProjects(rows = [], filters) {
@@ -45,8 +38,7 @@ export function filterAndSortProjects(rows = [], filters) {
   const needle = String(search || '').trim().toLowerCase();
 
   let list = rows.filter((row) => {
-    if (status === 'active' && (row.archived_at > 0 || row.is_deleted)) return false;
-    if (status === 'archived' && !(row.archived_at > 0 || row.is_deleted)) return false;
+    if (status !== 'all' && resolveProjectStatus(row) !== status) return false;
 
     if (clientId && row.client_id !== clientId) return false;
 
