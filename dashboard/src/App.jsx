@@ -313,7 +313,13 @@ export default function App() {
               ) : devChequePreview ? (
                 <ChequePreviewPlayground />
               ) : page === 'dashboard' ? (
-                <Dashboard key={dataEpoch} year={year} hidden={hidden} onNavigate={handleNavigate} />
+                <Dashboard
+                  key={dataEpoch}
+                  year={year}
+                  hidden={hidden}
+                  dashboardConfig={office.dashboard}
+                  onNavigate={handleNavigate}
+                />
               ) : page === 'projects' && projectDetailId ? (
                 <ProjectDetail
                   projectId={projectDetailId}

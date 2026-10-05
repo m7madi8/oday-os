@@ -1,6 +1,7 @@
 import { applyPalette, setAppCurrency } from '../theme';
 import { fetchOfficeSettings, saveOfficeSettingsApi } from './api/office';
 import { BRAND } from '../brand';
+import { normalizeDashboardConfig } from './dashboard/clientSpotlight';
 
 export const OFFICE_KEY = 'office-settings';
 
@@ -69,6 +70,11 @@ export const DEFAULT_OFFICE_SETTINGS = {
   invoicePrefix: 'ع.أ',
   invoiceNext: '1',
   paymentTermsDays: '14',
+  dashboard: {
+    clientMode: 'latest',
+    pinnedClientIds: [],
+    clientLimit: 6,
+  },
 };
 
 function asText(value, fallback = '') {
@@ -123,6 +129,7 @@ export function mergeOfficeSettings(raw) {
     fiscalYearStart: Number(source.fiscalYearStart) >= 1 && Number(source.fiscalYearStart) <= 12
       ? Number(source.fiscalYearStart)
       : 1,
+    dashboard: normalizeDashboardConfig(source.dashboard),
   };
 }
 

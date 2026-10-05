@@ -257,9 +257,120 @@ body {
 
 @media (min-width: 1024px) {
   .os-today-desk {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
     gap: 1.25rem;
   }
+}
+
+.os-today-desk__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  min-width: 0;
+}
+
+.os-desk-clients {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1rem 1.1rem 1.1rem;
+  flex: 0 0 auto;
+  max-height: min(22rem, 42vh);
+}
+
+.os-desk-clients__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+  flex-shrink: 0;
+}
+
+.os-desk-clients__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 1.25rem 0.75rem;
+  color: var(--graphite);
+  font-size: 0.875rem;
+}
+
+.os-desk-clients__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.os-desk-client-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  text-align: start;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--paper-200);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--paper-50);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.os-desk-client-row:hover {
+  border-color: color-mix(in srgb, var(--bronze1) 35%, var(--paper-200));
+  background: #fff;
+}
+
+.os-desk-client-row__main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.os-desk-client-row__main strong {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--black-950);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.os-desk-client-row__main span {
+  font-size: 0.75rem;
+  color: var(--graphite);
+  white-space: nowrap;
+}
+
+.os-desk-client-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  font-size: 0.75rem;
+  color: var(--graphite);
+}
+
+.os-desk-client-row__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .os-quick-notes--desk {
@@ -285,6 +396,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  flex: 1;
   padding: 1rem 1.1rem 1.1rem;
 }
 

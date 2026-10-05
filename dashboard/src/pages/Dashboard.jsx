@@ -5,6 +5,7 @@ import {
   ScrollText,
 } from 'lucide-react';
 import { QuickNotes } from '../components/QuickNotes';
+import { DashboardClientsSpotlight } from '../components/dashboard/DashboardClientsSpotlight';
 import { ProjectSketches } from '../components/dashboard/ProjectSketches';
 
 const ICON = 1.65;
@@ -16,7 +17,7 @@ const QUICK_ACTIONS = [
   { id: 'checks', label: 'متابعة شيك', hint: 'موعد أو حالة', icon: ScrollText, primary: false },
 ];
 
-export function Dashboard({ onNavigate }) {
+export function Dashboard({ onNavigate, dashboardConfig }) {
   return (
     <div className="os-today min-w-0">
       {onNavigate ? (
@@ -45,7 +46,10 @@ export function Dashboard({ onNavigate }) {
 
       <div className="os-today-desk">
         <QuickNotes variant="desk" />
-        <ProjectSketches onNavigate={onNavigate} />
+        <div className="os-today-desk__stack">
+          <DashboardClientsSpotlight config={dashboardConfig} onNavigate={onNavigate} />
+          <ProjectSketches onNavigate={onNavigate} />
+        </div>
       </div>
     </div>
   );

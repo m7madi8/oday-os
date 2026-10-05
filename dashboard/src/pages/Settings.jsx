@@ -14,14 +14,16 @@ import { BRAND } from '../brand';
 import { C, CURRENCIES, FONT_HEAD, PALETTES } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { Field, SectionCard, Segmented, SelectInput, TextArea, TextInput } from '../components/settings/Fields';
-import { COUNTRY_CODES, createId } from '../lib/officeSettings';
+import { COUNTRY_CODES, createId, DEFAULT_OFFICE_SETTINGS } from '../lib/officeSettings';
 import { getItem, setItem } from '../lib/storage';
 import { BackupPanel } from '../components/backup/BackupPanel';
+import { DashboardClientsConfig } from '../components/settings/DashboardClientsConfig';
 
 const TOC = [
   { id: 'identity', label: 'بيانات المكتب' },
   { id: 'payments', label: 'البنوك والدفع' },
   { id: 'services', label: 'أنواع المشاريع والخدمات' },
+  { id: 'dashboard', label: 'لوحة التحكم' },
   { id: 'expenses', label: 'فئات المصاريف' },
   { id: 'backup', label: 'النسخ الاحتياطي' },
 ];
@@ -72,6 +74,15 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
 
   function patch(partial) {
     onChange({ ...settings, ...partial });
+  }
+
+  function patchDashboard(partial) {
+    patch({
+      dashboard: {
+        ...(settings.dashboard || DEFAULT_OFFICE_SETTINGS.dashboard),
+        ...partial,
+      },
+    });
   }
 
   function addService() {
@@ -604,8 +615,20 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
           </SectionCard>
 
           <SectionCard
-            id="expenses"
+            id="dashboard"
             num={5}
+            title="لوحة التحكم"
+            hint="اختر كيف تظهر قائمة العملاء في الشاشة الرئيسية. المذكّرات تظهر دائمًا في اللوحة."
+          >
+            <DashboardClientsConfig
+              dashboard={settings.dashboard}
+              onPatch={patchDashboard}
+            />
+          </SectionCard>
+
+          <SectionCard
+            id="expenses"
+            num={6}
             title="فئات مصاريف المكتب"
             hint="صنّف مصاريف المكتب والمواقع لتسهيل المتابعة والتقارير."
           >
@@ -668,7 +691,7 @@ export function Settings({ settings, onChange, onSave, status, loaded, onImporte
 
           <SectionCard
             id="backup"
-            num={6}
+            num={7}
             title="النسخ والاستيراد"
             hint="نسخ احتياطي مشفّر إلى Google Drive ومجلد محلي، مع تصدير JSON سريع للإعدادات."
           >
