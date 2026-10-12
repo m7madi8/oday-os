@@ -7,7 +7,6 @@ import { ClientSelect } from '../ui/ResourcePage';
 import { ProjectSelect } from '../documents/ProjectSelect';
 import { PrimaryButton, GhostButton } from '../ui/Actions';
 import { ChequeBankSelect } from './ChequeBankSelect';
-import { ChequePreviewPanel } from './ChequePreviewPanel';
 import { listClients } from '../../lib/api/clients';
 import { listProjects } from '../../lib/api/projects';
 import { listInvoices } from '../../lib/api/invoices';
@@ -15,7 +14,6 @@ import {
   createCheque,
   updateCheque,
   fetchChequeInvoiceBalance,
-  fetchChequeTemplateOverride,
 } from '../../lib/api/cheques';
 import { uploadProjectDocument, listDocuments, updateDocumentMeta } from '../../lib/api/documents';
 import { invalidateFinance } from '../../lib/query';
@@ -23,8 +21,6 @@ import { showToast } from '../../lib/toast';
 import { todayIso } from '../../lib/labels';
 import { CHEQUE_CURRENCIES } from '../../lib/cheques/currencyConfig';
 import { analyzePalestinianIban, IBAN_STATUS, normalizeIban } from '../../lib/cheques/iban';
-import { mapChequeToPreviewData } from '../../lib/cheques/chequeMappers';
-import { resolveChequeTemplate } from '../../lib/cheques/templates/registry';
 import { isTerminal } from '../../lib/cheques/statusWorkflow';
 import { goToChequeDetail } from '../../lib/routing/appRoutes';
 import { ApiError } from '../../lib/api/client';
@@ -113,12 +109,6 @@ export function ChequeWorkspace({ mode, cheque, hidden, onDone, onCancel }) {
     enabled: Boolean(form.client_id),
   });
 
-  const templateOverride = useQuery({
-    queryKey: ['cheque-template-override', form.bank_id],
-    queryFn: () => fetchChequeTemplateOverride(form.bank_id),
-    enabled: Boolean(form.bank_id),
-  });
-
   const invoiceBalance = useQuery({
     queryKey: ['cheque-invoice-balance', form.invoice_id],
     queryFn: () => fetchChequeInvoiceBalance(form.invoice_id),
@@ -161,37 +151,6 @@ export function ChequeWorkspace({ mode, cheque, hidden, onDone, onCancel }) {
     if (!form.client_id) return rows;
     return rows.filter((p) => p.client_id === form.client_id || p.client?.id === form.client_id);
   }, [projects.data, form.client_id]);
-
-  const previewRow = useMemo(
-    () => ({
-      direction: form.direction,
-      amount: form.amount,
-      currency: form.currency_code,
-      payee: form.direction === 'outgoing' ? form.payee_name : undefined,
-      client_name: clients.data?.data?.find((c) => c.id === form.client_id)?.name,
-      bank_id: form.bank_id,
-      bank_name: form.bank_name || selectedBank?.nameAr,
-      number: form.number,
-      issue_date: form.issue_date,
-      due_date: form.due_date,
-      issueDate: form.issue_date,
-      dueDate: form.due_date,
-      account_reference: form.account_reference,
-      notes: form.notes,
-    }),
-    [form, clients.data, selectedBank],
-  );
-
-  const template = useMemo(() => {
-    const bank = selectedBank || (form.bank_id ? { id: form.bank_id, nameAr: form.bank_name, verified: selectedBank?.verified } : null);
-    const override = templateOverride.data?.data;
-    const withScan = override?.scan_document_id
-      ? { ...override, scan_url: `/api/v1/documents/${override.scan_document_id}/download?inline=true` }
-      : override;
-    return resolveChequeTemplate(bank || previewRow.bank, withScan);
-  }, [selectedBank, form.bank_id, form.bank_name, previewRow, templateOverride.data]);
-
-  const previewData = useMemo(() => mapChequeToPreviewData(previewRow), [previewRow]);
 
   const patch = useCallback((next) => {
     setDirty(true);
@@ -332,7 +291,7 @@ export function ChequeWorkspace({ mode, cheque, hidden, onDone, onCancel }) {
   const bal = invoiceBalance.data?.data;
 
   return (
-    <div className="cheque-workspace grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] min-w-0">
+    <div className="cheque-workspace min-w-0 max-w-2xl">
       <form className="space-y-4 min-w-0" onSubmit={onSubmit} noValidate>
         <Field label="اتجاه الشيك">
           <Segmented
@@ -568,10 +527,6 @@ export function ChequeWorkspace({ mode, cheque, hidden, onDone, onCancel }) {
           ) : null}
         </div>
       </form>
-
-      <aside className="cheque-workspace-preview lg:sticky lg:top-4 self-start min-w-0">
-        <ChequePreviewPanel direction={form.direction} data={previewData} template={template} />
-      </aside>
     </div>
   );
 }

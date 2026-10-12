@@ -3686,6 +3686,71 @@ html[data-desktop] #app-sidebar * {
   }
 }
 
+.cheque-essentials {
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+
+.cheque-essentials__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.cheque-essentials__title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--graphite);
+}
+
+.cheque-essentials__number {
+  margin: 0.2rem 0 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--black-950);
+}
+
+.cheque-essentials__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.cheque-essentials__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.cheque-essentials__row--notes {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.cheque-essentials__label {
+  color: var(--graphite);
+  flex-shrink: 0;
+}
+
+.cheque-essentials__value {
+  color: var(--black-950);
+  text-align: end;
+  min-width: 0;
+}
+
+.cheque-essentials__notes {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--black-950);
+}
+
 .cheque-workspace .cheque-form-actions {
   position: sticky;
   bottom: 0;

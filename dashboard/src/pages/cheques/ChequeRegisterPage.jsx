@@ -4,7 +4,7 @@ import { Plus, Search, X } from 'lucide-react';
 import { C, FONT_SERIF, money } from '../../theme';
 import { EmptyState, ErrorState, GhostButton, LoadingBlock, PrimaryButton } from '../../components/ui/Actions';
 import { ChequeSummaryOverview } from '../../components/cheques/ChequeSummaryOverview';
-import { ChequePreviewPanel } from '../../components/cheques/ChequePreviewPanel';
+import { ChequeEssentialsPanel } from '../../components/cheques/ChequeEssentialsPanel';
 import { ChequeStatusIndicator, ChequeDirectionBadge } from '../../components/cheques/ChequeStatusIndicator';
 import { listCheques, fetchChequeSummary, getCheque } from '../../lib/api/cheques';
 import { keys } from '../../lib/query';
@@ -16,10 +16,8 @@ import {
   goToChequeNew,
 } from '../../lib/routing/appRoutes';
 import {
-  mapChequeToPreviewData,
   normalizeListRow,
   partyColumnLabel,
-  templateForChequeRow,
 } from '../../lib/cheques/chequeMappers';
 import { palestinianBanks } from '../../data/palestinianBanks';
 import { chequeStatusLabel } from '../../lib/labels';
@@ -122,8 +120,6 @@ export function ChequeRegisterPage({ hidden, canCreate, selectedId, onSelectId }
   });
 
   const previewCheque = selectedDetail.data?.data || selectedRow;
-  const previewData = previewCheque ? mapChequeToPreviewData(previewCheque) : null;
-  const previewTemplate = previewCheque ? templateForChequeRow(previewCheque) : null;
 
   const pagination = listQuery.data?.meta?.pagination;
   const [focusIndex, setFocusIndex] = useState(0);
@@ -388,16 +384,11 @@ export function ChequeRegisterPage({ hidden, canCreate, selectedId, onSelectId }
           </div>
 
           <aside className="cheque-register-preview hidden xl:block sticky top-4 self-start min-w-0">
-            {previewCheque && previewTemplate ? (
-              <ChequePreviewPanel
-                direction={previewCheque.direction}
-                data={previewData}
-                template={previewTemplate}
-                loading={selectedDetail.isLoading && !selectedRow}
-              />
-            ) : (
-              <p className="text-sm" style={{ color: C.inkSoft }}>اختر شيكًا من الجدول لمعاينته.</p>
-            )}
+            <ChequeEssentialsPanel
+              cheque={previewCheque}
+              hidden={hidden}
+              loading={selectedDetail.isLoading && Boolean(selectedId) && !selectedRow}
+            />
           </aside>
         </div>
       ) : null}
