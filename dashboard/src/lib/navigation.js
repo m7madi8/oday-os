@@ -5,13 +5,14 @@ import {
   FileText,
   FolderKanban,
   LayoutDashboard,
+  Receipt,
   Settings as SettingsIcon,
   Users,
   Wallet,
 } from 'lucide-react';
 
 /** صفحات المال — للتمييز في الشريط الجانبي عند الحاجة */
-export const FINANCE_PAGE_IDS = ['invoices', 'payments', 'checks', 'expenses', 'payroll', 'dead-debts'];
+export const FINANCE_PAGE_IDS = ['invoices', 'receipts', 'payments', 'checks', 'expenses', 'payroll', 'dead-debts'];
 
 export const NAV_GROUPS = [
   {
@@ -24,6 +25,7 @@ export const NAV_GROUPS = [
       { id: 'projects', label: 'المشاريع', icon: FolderKanban },
       { id: 'clients', label: 'العملاء', icon: Users },
       { id: 'invoices', label: 'الفواتير', icon: FileText },
+      { id: 'receipts', label: 'سندات القبض', icon: Receipt },
     ],
   },
   {

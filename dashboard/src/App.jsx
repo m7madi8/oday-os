@@ -12,7 +12,7 @@ import { Projects } from './pages/Projects';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { Clients } from './pages/Clients';
 import { Documents } from './pages/Documents';
-import { Payments } from './pages/Payments';
+import { ReceiptVouchers } from './pages/ReceiptVouchers';
 import { Cheques } from './pages/Cheques';
 import { ChequePreviewPlayground } from './pages/ChequePreviewPlayground';
 import { ChequeDesignGallery } from './pages/ChequeDesignGallery';
@@ -340,8 +340,14 @@ export default function App() {
                 <Invoices hidden={hidden} />
               ) : page === 'dead-debts' ? (
                 <DeadDebts hidden={hidden} />
-              ) : page === 'payments' ? (
-                <Payments hidden={hidden} />
+              ) : page === 'receipts' || page === 'payments' ? (
+                <ReceiptVouchers
+                  hidden={hidden}
+                  onOpenCheques={() => {
+                    setPage('checks');
+                    navigateApp('/cheques');
+                  }}
+                />
               ) : page === 'checks' ? (
                 <Cheques hidden={hidden} />
               ) : page === 'expenses' ? (
