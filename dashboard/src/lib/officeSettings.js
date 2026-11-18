@@ -1,5 +1,6 @@
 import { applyPalette, setAppCurrency } from '../theme';
 import { fetchOfficeSettings, saveOfficeSettingsApi } from './api/office';
+import { getToken, isLocalToken } from './auth/session';
 import { BRAND } from '../brand';
 import { normalizeDashboardConfig } from './dashboard/clientSpotlight';
 
@@ -139,6 +140,9 @@ export function applyOfficeAppearance(settings) {
 }
 
 export async function loadOfficeSettings() {
+  if (isLocalToken(await getToken())) {
+    return { ...DEFAULT_OFFICE_SETTINGS };
+  }
   try {
     const res = await fetchOfficeSettings();
     if (res && res.settings) {
@@ -151,5 +155,6 @@ export async function loadOfficeSettings() {
 }
 
 export async function saveOfficeSettings(settings) {
+  if (isLocalToken(await getToken())) return;
   await saveOfficeSettingsApi(settings);
 }

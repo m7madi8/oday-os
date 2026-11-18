@@ -13,18 +13,16 @@ describe('office local login gate', () => {
     import.meta.env.DEV = previousDev;
   });
 
-  it('allows oday/oday only when import.meta.env.DEV is true', () => {
+  it('allows oday/oday in development and production builds', () => {
     import.meta.env.DEV = true;
     expect(isLocalOfficeLoginEnabled()).toBe(true);
     expect(isOfficeLogin('oday', 'oday')).toBe(true);
     expect(tryLocalOfficeSession('oday', 'oday')?.token).toBe('local:oday');
-  });
 
-  it('blocks oday/oday in production builds (DEV false)', () => {
     import.meta.env.DEV = false;
-    expect(isLocalOfficeLoginEnabled()).toBe(false);
-    expect(isOfficeLogin('oday', 'oday')).toBe(false);
-    expect(tryLocalOfficeSession('oday', 'oday')).toBe(null);
+    expect(isLocalOfficeLoginEnabled()).toBe(true);
+    expect(isOfficeLogin('oday', 'oday')).toBe(true);
+    expect(tryLocalOfficeSession('oday', 'oday')?.token).toBe('local:oday');
   });
 
   it('detects local tokens', () => {

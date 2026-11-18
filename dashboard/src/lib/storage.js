@@ -1,4 +1,5 @@
 import { api } from './api/client';
+import { getToken, isLocalToken } from './auth/session';
 
 const META_PREFIX = '__oday_meta:';
 const memory = new Map();
@@ -82,7 +83,15 @@ async function flushDirty() {
   }));
 }
 
+async function usesLocalSession() {
+  return isLocalToken(await getToken());
+}
+
 export async function syncFromServer() {
+  if (await usesLocalSession()) {
+    emit('offline');
+    return undefined;
+  }
   if (hydrating) return hydrating;
   hydrating = (async () => {
     try {
@@ -116,6 +125,10 @@ export async function getItem(key) {
 export async function setItem(key, value) {
   const updatedAt = Date.now();
   writeLocal(key, value, updatedAt, true);
+  if (await usesLocalSession()) {
+    emit('offline');
+    return;
+  }
   emit('syncing');
   try {
     await api(`/api/oday/mobile/items/${encodeURIComponent(key)}`, {

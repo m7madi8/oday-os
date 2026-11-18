@@ -1,4 +1,4 @@
-/** Local office demo login — development only; never enabled in production builds. */
+/** Office login for the hosted dashboard. The session stays in this browser. */
 
 export const LOCAL_TOKEN_PREFIX = 'local:';
 
@@ -6,7 +6,7 @@ const OFFICE_USERNAME = 'oday';
 const OFFICE_PASSWORD = 'oday';
 
 export function isLocalOfficeLoginEnabled() {
-  return import.meta.env.DEV === true;
+  return true;
 }
 
 export function isLocalToken(token) {
