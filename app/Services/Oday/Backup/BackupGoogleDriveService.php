@@ -44,6 +44,8 @@ final class BackupGoogleDriveService
 
     public function authorizationUrl(string $state): string
     {
+        OdayBackupRequirements::assertGoogleOAuthConfigured();
+
         $client = $this->baseClient();
         $client->setAccessType('offline');
         $client->setPrompt('consent');
@@ -56,6 +58,9 @@ final class BackupGoogleDriveService
 
     public function connect(int $companyId, string $code): OdayBackupSetting
     {
+        OdayBackupRequirements::assertGoogleOAuthConfigured();
+        OdayBackupRequirements::assertEncryptionConfigured();
+
         $client = $this->baseClient();
         $client->setRedirectUri($this->redirectUri());
         $token = $client->fetchAccessTokenWithAuthCode($code);

@@ -26,7 +26,8 @@ export function registerFilesIpc() {
   });
 
   ipcMain.handle('oday:files:save', async (_event, payload: { name?: string; data: string; mime?: string }) => {
-    const name = payload?.name || 'oday-file';
+    if (typeof payload?.data !== 'string' || !payload.data) return false;
+    const name = path.basename(payload?.name || 'oday-file') || 'oday-file';
     const result = await dialog.showSaveDialog({
       defaultPath: name,
     });

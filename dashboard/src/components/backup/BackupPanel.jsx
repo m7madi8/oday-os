@@ -13,7 +13,6 @@ import {
   fetchBackupRuns,
   fetchBackupSettings,
   markBackupLocalSynced,
-  restoreBackupRun,
   retryBackupRun,
   runBackupNow,
   saveBackupSettings,
@@ -58,7 +57,6 @@ export function BackupPanel() {
   const runs = runsQuery.data?.runs || [];
 
   const [busy, setBusy] = useState('');
-  const [restoreId, setRestoreId] = useState(null);
 
   const patchSettings = useMutation({
     mutationFn: saveBackupSettings,
@@ -345,8 +343,15 @@ export function BackupPanel() {
                   >
                     تنزيل
                   </button>
-                  <button type="button" className="text-[12px] underline" style={{ color: C.burgundy }} onClick={() => setRestoreId(run.id)}>
-                    استعادة
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="text-[12px] underline opacity-60 cursor-not-allowed"
+                    style={{ color: C.inkSoft }}
+                    title="استعادة النسخة غير متاحة حالياً"
+                  >
+                    الاستعادة غير متاحة
                   </button>
                 </div>
               </li>
@@ -355,34 +360,6 @@ export function BackupPanel() {
         )}
       </div>
 
-      {restoreId ? (
-        <div className="rounded-lg p-4" style={{ background: C.burgundySoft, border: `1px solid ${C.burgundyLine}` }}>
-          <p className="text-sm" style={{ color: C.burgundy }}>
-            الاستعادة ستستبدل بيانات المكتب الحالية. سيتم حفظ نسخة أمان قبل التنفيذ.
-          </p>
-          <div className="flex gap-2 mt-3">
-            <button
-              type="button"
-              className="rounded-lg px-4 py-2 text-sm min-h-10 text-white"
-              style={{ background: C.burgundy }}
-              onClick={async () => {
-                try {
-                  await restoreBackupRun(restoreId);
-                  showToast('تمت الاستعادة', 'ok');
-                  setRestoreId(null);
-                } catch (error) {
-                  showToast(error.message || 'تعذر الاستعادة', 'error');
-                }
-              }}
-            >
-              تأكيد الاستعادة
-            </button>
-            <button type="button" className="rounded-lg px-4 py-2 text-sm min-h-10" style={{ background: C.card, border: `1px solid ${C.border}` }} onClick={() => setRestoreId(null)}>
-              إلغاء
-            </button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

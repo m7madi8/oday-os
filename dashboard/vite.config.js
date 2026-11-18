@@ -48,7 +48,7 @@ export default defineConfig(async ({ command, mode }) => {
     test: {
       environment: 'happy-dom',
       setupFiles: ['./src/test/setup.js'],
-      include: ['src/**/*.test.{js,jsx}'],
+      include: ['src/**/*.test.{js,jsx}', 'electron/**/*.test.ts'],
     },
     base: isDesktop && command === 'build' ? './' : '/',
     server: {

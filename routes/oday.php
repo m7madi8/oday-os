@@ -19,10 +19,15 @@ Route::prefix('api/oday/desktop')->middleware(['api', 'throttle:30,1'])->group(f
     Route::get('version', [DesktopUpdateController::class, 'version']);
 });
 
-Route::prefix('api/oday')->middleware(['api', 'throttle:60,1', 'oday.token'])->group(function () {
-    Route::get('items', [OdayDashboardController::class, 'index']);
-    Route::get('items/{key}', [OdayDashboardController::class, 'show']);
-    Route::put('items/{key}', [OdayDashboardController::class, 'upsert']);
+Route::prefix('api/oday')->middleware(['api', 'throttle:60,1'])->group(function () {
+    $disabled = function () {
+        return response()->json([
+            'message' => 'مسار المزامنة القديم غير متاح.',
+            'code' => 'legacy_sync_disabled',
+        ], 410);
+    };
+    Route::match(['GET', 'PUT', 'POST', 'DELETE'], 'items', $disabled);
+    Route::match(['GET', 'PUT', 'POST', 'DELETE'], 'items/{key}', $disabled);
 });
 
 Route::prefix('api/oday/mobile')->middleware(['api', 'throttle:60,1'])->group(function () {
@@ -34,7 +39,7 @@ Route::prefix('api/oday/mobile')->middleware(['api', 'throttle:60,1'])->group(fu
         } catch (\Throwable) {
             return response()->json([
                 'ok' => false,
-                'message' => 'تعذر الاتصال بقاعدة البيانات. شغّل MySQL (المنفذ 3306) وتحقق من إعدادات DB في .env.',
+                'message' => 'تعذر الاتصال بقاعدة البيانات.',
             ], 503);
         }
     });

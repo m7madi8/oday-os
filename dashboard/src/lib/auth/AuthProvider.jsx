@@ -2,40 +2,20 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as authApi from '../api/auth';
 import { setUnauthorizedHandler } from '../api/client';
-import { clearSession, isLocalToken, loadSession, saveSession } from './session';
+import { isLocalOfficeLoginEnabled, isLocalToken, tryLocalOfficeSession } from './office';
+import { clearSession, loadSession, saveSession } from './session';
 import { queryClient } from '../query';
 import { loadStoredServerUrl } from '../env';
 
-const OFFICE_USERNAME = 'oday';
-const OFFICE_PASSWORD = 'oday';
-
 const AuthContext = createContext(null);
 
-function isOfficeLogin(username, password) {
-  return (
-    username.trim().toLowerCase() === OFFICE_USERNAME &&
-    password.trim() === OFFICE_PASSWORD
-  );
-}
-
-function localOfficeSession() {
-  return {
-    token: 'local:oday',
-    user: {
-      id: 'oday',
-      email: 'oday',
-      first_name: 'عدي',
-      last_name: 'أبو ضحى',
-      is_admin: true,
-      is_owner: true,
-      permissions: '',
-    },
-    company: {
-      id: 'oday',
-      name: 'مكتب عدي أبو ضحى',
-      currency_id: '1',
-    },
-  };
+async function restoreSession() {
+  const stored = await loadSession();
+  if (stored?.token && isLocalToken(stored.token) && !isLocalOfficeLoginEnabled()) {
+    await clearSession();
+    return null;
+  }
+  return stored;
 }
 
 export function AppProviders({ children }) {
@@ -61,15 +41,16 @@ export function AppProviders({ children }) {
       });
     });
     loadStoredServerUrl()
-      .then(() => loadSession())
+      .then(() => restoreSession())
       .then(setSession)
       .finally(() => setReady(true));
     return () => setUnauthorizedHandler(null);
   }, []);
 
   const authenticate = useCallback(async (email, password, otp) => {
-    if (isOfficeLogin(email, password)) {
-      return localOfficeSession();
+    const local = tryLocalOfficeSession(email, password);
+    if (local) {
+      return local;
     }
 
     return authApi.login({
@@ -80,6 +61,7 @@ export function AppProviders({ children }) {
   }, []);
 
   const applySession = useCallback(async (payload) => {
+    queryClient.clear();
     await saveSession(payload);
     setSession({ token: payload.token, user: payload.user, company: payload.company });
   }, []);

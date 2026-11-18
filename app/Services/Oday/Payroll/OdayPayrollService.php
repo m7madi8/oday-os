@@ -139,6 +139,21 @@ class OdayPayrollService
         $notes = $payload['notes'] ?? null;
 
         return DB::transaction(function () use ($employee, $user, $amount, $currency, $period, $paidOn, $method, $notes) {
+            $employee = OdayEmployee::query()->whereKey($employee->getKey())->lockForUpdate()->firstOrFail();
+
+            $existing = OdayPayrollPayment::query()
+                ->where('company_id', $employee->company_id)
+                ->where('employee_id', $employee->id)
+                ->where('period', $period)
+                ->where('is_deleted', false)
+                ->first();
+
+            if ($existing) {
+                throw ValidationException::withMessages([
+                    'period' => ['تم صرف راتب هذا الشهر لهذا الموظف مسبقاً'],
+                ]);
+            }
+
             $expense = $this->recordSalaryExpense($employee, $user, $amount, $currency, $period, $paidOn, $notes);
 
             $payment = new OdayPayrollPayment();
@@ -321,7 +336,7 @@ class OdayPayrollService
         $expense->setRelation('company', $company);
 
         $saved = $this->expenses->save([
-            'amount' => (float) $amount,
+            'amount' => $amount,
             'date' => $paidOn,
             'payment_date' => $paidOn,
             'public_notes' => $label,

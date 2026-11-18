@@ -52,7 +52,7 @@ const t = {
   serverRequired: 'أدخل عنوان خادم Laravel.',
   serverLoopback: 'على الهاتف استخدم IP الشبكة (مثل 192.168.x.x) وليس 127.0.0.1',
   userLabel: 'اسم المستخدم',
-  userPlaceholder: 'oday',
+  userPlaceholder: 'user@example.com',
   passwordLabel: 'كلمة المرور',
   forgot: 'نسيت كلمة المرور؟',
   forgotTitle: 'استعادة الدخول',

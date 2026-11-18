@@ -1,6 +1,6 @@
 import { getApiUrl } from '@/lib/server';
 import { clearSession, getToken } from '@/lib/auth/session';
-import { isLocalToken } from '@/lib/auth/office';
+import { shouldEndSession } from './sessionEnd';
 export class ApiError extends Error {
   status: number;
   payload: unknown;
@@ -55,9 +55,14 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     headers['X-API-TOKEN'] = token;
   }
 
+  const root = getApiUrl();
+  if (!root) {
+    throw new ApiError('لم يُضبط عنوان خادم HTTPS.', 0);
+  }
+
   let response: Response;
   try {
-    response = await fetch(`${getApiUrl()}${path}${qs(options.query)}`, {
+    response = await fetch(`${root}${path}${qs(options.query)}`, {
       method: options.method ?? 'GET',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
@@ -77,11 +82,11 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   }
 
   if (response.status === 401 || response.status === 403) {
-    if (isLocalToken(token)) {
-      return (options.emptyAuth ?? null) as T;
+    if (token && shouldEndSession(response.status, json)) {
+      await clearSession();
+      onUnauthorized?.();
     }
-    await clearSession();
-    onUnauthorized?.();    const message =
+    const message =
       typeof json === 'object' && json && 'message' in json
         ? String((json as { message: string }).message)
         : 'انتهت الجلسة';

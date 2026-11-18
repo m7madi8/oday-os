@@ -210,10 +210,10 @@ export function buildReportCsv(metrics, { year, month, periodLabel }) {
     ['الفترة', periodLabel],
     [],
     ['ملخص الفترة', ''],
-    ['الدخل المحصل', metrics.income],
-    ['مصاريف', metrics.expenses],
-    ['صافي الربح', metrics.netProfit],
-    ['كل المستحقات المفتوحة', metrics.openReceivables],
+    ['الدخل المحصل', metrics.incomeLabel || metrics.income],
+    ['مصاريف', metrics.expensesLabel || metrics.expenses],
+    ['صافي الربح', metrics.netProfitLabel || metrics.netProfit],
+    ['كل المستحقات المفتوحة', metrics.openReceivablesLabel || metrics.openReceivables],
     ['عدد الفواتير المفتوحة', metrics.openInvoiceCount],
     [],
     ['ملخص السنة', year],
@@ -224,7 +224,12 @@ export function buildReportCsv(metrics, { year, month, periodLabel }) {
     [],
     ['التسلسل الشهري', year],
     ['الشهر', 'الدخل', 'مصاريف', 'الربح'],
-    ...(metrics.monthlySeries || []).map((row) => [row.label, row.income, row.expenses, row.profit]),
+    ...(metrics.monthlySeries || []).map((row) => [
+      row.label,
+      row.incomeLabel || row.income,
+      row.expensesLabel || row.expenses,
+      row.profitLabel || row.profit,
+    ]),
   ];
   return lines.map((row) => row.join(',')).join('\n');
 }

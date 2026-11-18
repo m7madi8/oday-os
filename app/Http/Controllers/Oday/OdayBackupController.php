@@ -9,7 +9,10 @@ use App\Services\Oday\Backup\BackupEngine;
 use App\Services\Oday\Backup\BackupGoogleDriveService;
 use App\Services\Oday\Backup\BackupLocalPathValidator;
 use App\Services\Oday\Backup\BackupRestoreService;
+use App\Services\Oday\Backup\BackupRestoreUnavailable;
 use App\Services\Oday\Backup\BackupSchedulerService;
+use App\Services\Oday\Backup\OdayBackupRequirements;
+use RuntimeException;
 use App\Utils\TruthSource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -55,6 +58,17 @@ class OdayBackupController extends Controller
             'retention_count_local' => 'nullable|integer|min:1|max:365',
         ]);
 
+        try {
+            if ($request->boolean('drive_enabled') || $request->boolean('local_enabled')) {
+                OdayBackupRequirements::assertEncryptionConfigured();
+            }
+            if ($request->boolean('drive_enabled')) {
+                OdayBackupRequirements::assertGoogleOAuthConfigured();
+            }
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
         $settings = OdayBackupSetting::query()->firstOrCreate(['company_id' => $companyId]);
         $settings->fill($data);
         $settings->save();
@@ -75,6 +89,12 @@ class OdayBackupController extends Controller
 
     public function googleConnect(BackupGoogleDriveService $google): JsonResponse
     {
+        try {
+            OdayBackupRequirements::assertGoogleOAuthConfigured();
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
         $truth = app(TruthSource::class);
         $state = $google->signedState($this->companyId(), (int) $truth->getUser()->id);
 
@@ -117,6 +137,9 @@ class OdayBackupController extends Controller
         try {
             $run = $engine->run($this->companyId(), OdayBackupRun::TYPE_MANUAL);
         } catch (\RuntimeException $e) {
+            if (str_contains($e->getMessage(), 'BACKUP_ENCRYPTION_KEY')) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
             $message = $e->getMessage() === 'backup_already_running'
                 ? 'نسخة احتياطية قيد التنفيذ بالفعل'
                 : 'تعذر تشغيل النسخ الاحتياطي';
@@ -172,6 +195,13 @@ class OdayBackupController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
+        if ($run->archive_scope !== 'company') {
+            return response()->json([
+                'message' => 'تنزيل هذه النسخة غير متاح لأنها قد تتضمن بيانات خارج الشركة.',
+                'code' => 'backup_download_blocked',
+            ], 409);
+        }
+
         $path = $run->storage_path;
         if (! is_string($path) || ! File::exists($path)) {
             return response()->json(['message' => 'الملف غير متوفر'], 404);
@@ -210,8 +240,11 @@ class OdayBackupController extends Controller
 
         try {
             $restore->restoreFromRun($this->companyId(), (int) $request->input('run_id'));
-        } catch (\Throwable $e) {
-            return response()->json(['message' => 'تعذر الاستعادة — '.$e->getMessage()], 422);
+        } catch (BackupRestoreUnavailable) {
+            return response()->json([
+                'message' => 'استعادة النسخة غير متاحة حالياً.',
+                'code' => BackupRestoreUnavailable::CODE,
+            ], 409);
         }
 
         return response()->json(['message' => 'تمت الاستعادة بنجاح']);

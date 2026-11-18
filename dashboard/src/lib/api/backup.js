@@ -52,6 +52,6 @@ export function markBackupLocalSynced(id, checksum) {
   return api(`/api/backup/runs/${id}/local-synced`, { method: 'POST', body: { checksum } });
 }
 
-export function restoreBackupRun(runId) {
-  return api('/api/backup/restore', { method: 'POST', body: { run_id: runId, confirm: true } });
+export function restoreBackupRun() {
+  return Promise.reject(new Error('استعادة النسخة غير متاحة حالياً.'));
 }

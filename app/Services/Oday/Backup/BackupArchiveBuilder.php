@@ -2,18 +2,21 @@
 
 namespace App\Services\Oday\Backup;
 
-use App\Services\OdayDashboardStore;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Process;
 use ZipArchive;
 
+/**
+ * Company backup archive.
+ *
+ * A full mysqldump is not written. It would include every company's rows and
+ * the server would still hand the encrypted file to one company's administrator.
+ * The JSON export below is only the acting company's cheque and settings rows.
+ * It is not a complete recovery set. Restore stays disabled.
+ */
 final class BackupArchiveBuilder
 {
-    public function __construct(private OdayDashboardStore $dashboardStore) {}
-
     /**
      * @return array{zip_path: string, manifest: array<string, mixed>}
      */
@@ -23,19 +26,8 @@ final class BackupArchiveBuilder
         File::ensureDirectoryExists($tempRoot);
 
         try {
-            $components = [];
-            $dumpPath = $tempRoot.'/database.sql';
-            if ($this->writeDatabaseDump($dumpPath)) {
-                $components[] = 'database.sql';
-            } else {
-                $jsonPath = $tempRoot.'/database.json';
-                File::put($jsonPath, json_encode($this->fallbackDatabaseExport($companyId), JSON_UNESCAPED_UNICODE));
-                $components[] = 'database.json';
-            }
-
-            $odayPath = $tempRoot.'/oday-dashboard.json';
-            File::put($odayPath, json_encode($this->dashboardStore->all(), JSON_UNESCAPED_UNICODE));
-            $components[] = 'oday-dashboard.json';
+            $jsonPath = $tempRoot.'/database.json';
+            File::put($jsonPath, json_encode($this->companyDatabaseExport($companyId), JSON_UNESCAPED_UNICODE));
 
             $now = Carbon::now($timezone);
             $manifest = [
@@ -44,9 +36,10 @@ final class BackupArchiveBuilder
                 'type' => $type,
                 'created_at' => $now->toIso8601String(),
                 'app_version' => (string) config('ninja.app_version', 'oday-os'),
-                'database_type' => (string) Config::get('database.default'),
-                'components' => $components,
+                'components' => ['database.json'],
                 'company_id' => $companyId,
+                'scope' => 'company',
+                'database' => 'company_subset',
             ];
             File::put($tempRoot.'/manifest.json', json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
@@ -68,74 +61,10 @@ final class BackupArchiveBuilder
         }
     }
 
-    private function writeDatabaseDump(string $target): bool
-    {
-        if (Config::get('database.default') !== 'mysql') {
-            return false;
-        }
-
-        $db = Config::get('database.connections.mysql');
-        $host = $db['host'] ?? '127.0.0.1';
-        $port = $db['port'] ?? '3306';
-        $database = $db['database'] ?? '';
-        $username = $db['username'] ?? '';
-        $password = $db['password'] ?? '';
-
-        if ($database === '' || $username === '') {
-            return false;
-        }
-
-        $mysqldump = $this->findMysqldump();
-        if ($mysqldump === null) {
-            return false;
-        }
-
-        $command = [
-            $mysqldump,
-            '--host='.$host,
-            '--port='.$port,
-            '--user='.$username,
-            '--single-transaction',
-            '--quick',
-            '--routines',
-            '--triggers',
-            $database,
-        ];
-
-        $env = [];
-        if ($password !== '') {
-            $env['MYSQL_PWD'] = $password;
-        }
-
-        $result = Process::timeout(600)->env($env)->run($command);
-        if (! $result->successful()) {
-            return false;
-        }
-        File::put($target, $result->output());
-        if (! File::exists($target) || File::size($target) < 32) {
-            if (File::exists($target)) {
-                File::delete($target);
-            }
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private function findMysqldump(): ?string
-    {
-        foreach (['mysqldump', 'C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe'] as $candidate) {
-            $result = Process::run([$candidate, '--version']);
-            if ($result->successful()) {
-                return $candidate;
-            }
-        }
-
-        return null;
-    }
-
-    private function fallbackDatabaseExport(int $companyId): array
+    /**
+     * @return array<string, mixed>
+     */
+    private function companyDatabaseExport(int $companyId): array
     {
         $tables = ['oday_cheques', 'company_settings'];
         $payload = ['company_id' => $companyId, 'tables' => []];
@@ -143,11 +72,13 @@ final class BackupArchiveBuilder
             if (! DB::getSchemaBuilder()->hasTable($table)) {
                 continue;
             }
-            $query = DB::table($table);
-            if (DB::getSchemaBuilder()->hasColumn($table, 'company_id')) {
-                $query->where('company_id', $companyId);
+            if (! DB::getSchemaBuilder()->hasColumn($table, 'company_id')) {
+                continue;
             }
-            $payload['tables'][$table] = $query->limit(5000)->get();
+            $payload['tables'][$table] = DB::table($table)
+                ->where('company_id', $companyId)
+                ->limit(5000)
+                ->get();
         }
 
         return $payload;

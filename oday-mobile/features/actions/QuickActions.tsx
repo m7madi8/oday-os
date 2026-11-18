@@ -14,6 +14,7 @@ import { invalidateFinance, keys } from '@/lib/query';
 import { ApiError } from '@/lib/api/client';
 import { useOffline } from '@/hooks/useOffline';
 import { C, FONT_BODY } from '@/theme';
+import { parseDecimalAmount } from '@/lib/money/decimalAmount';
 
 export type QuickKind = 'client' | 'project' | 'invoice' | 'payment' | 'expense' | 'cheque' | null;
 
@@ -208,12 +209,15 @@ function InvoiceForm({ disabled, onDone }: { disabled: boolean; onDone: () => vo
   const [notes, setNotes] = useState('أتعاب هندسية');
   const selected = clientId || clients.data?.data?.[0]?.id || '';
   const mutation = useMutation({
-    mutationFn: () =>
-      createInvoice({
+    mutationFn: () => {
+      const costAmount = parseDecimalAmount(cost);
+      if (!costAmount) throw new Error('المبلغ غير صالح');
+      return createInvoice({
         client_id: selected,
         date: new Date().toISOString().slice(0, 10),
-        line_items: [{ quantity: 1, cost: Number(cost) || 0, notes, product_key: notes }],
-      }),
+        line_items: [{ quantity: 1, cost: costAmount, notes, product_key: notes }],
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       onDone();
@@ -236,12 +240,15 @@ function PaymentForm({ disabled, onDone }: { disabled: boolean; onDone: () => vo
   const [amount, setAmount] = useState('');
   const selected = clientId || clients.data?.data?.[0]?.id || '';
   const mutation = useMutation({
-    mutationFn: () =>
-      createPayment({
+    mutationFn: () => {
+      const parsed = parseDecimalAmount(amount);
+      if (!parsed) throw new Error('المبلغ غير صالح');
+      return createPayment({
         client_id: selected,
-        amount: Number(amount) || 0,
+        amount: parsed,
         date: new Date().toISOString().slice(0, 10),
-      }),
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       onDone();
@@ -261,12 +268,15 @@ function ExpenseForm({ disabled, onDone }: { disabled: boolean; onDone: () => vo
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const mutation = useMutation({
-    mutationFn: () =>
-      createExpense({
-        amount: Number(amount) || 0,
+    mutationFn: () => {
+      const parsed = parseDecimalAmount(amount);
+      if (!parsed) throw new Error('المبلغ غير صالح');
+      return createExpense({
+        amount: parsed,
         date: new Date().toISOString().slice(0, 10),
         public_notes: notes,
-      }),
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       onDone();

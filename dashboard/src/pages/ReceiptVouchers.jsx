@@ -14,6 +14,7 @@ import { ClientSelect } from '../components/ui/ResourcePage';
 import { ErrorState, GhostButton, LoadingBlock, PrimaryButton } from '../components/ui/Actions';
 import { Segmented, TextInput } from '../components/settings/Fields';
 import { showToast } from '../lib/toast';
+import { parseDecimalAmount } from '../lib/money/decimalAmount';
 import { partyColumnLabel } from '../lib/cheques/chequeMappers';
 import { goToChequeDetail, goToChequeNew } from '../lib/routing/appRoutes';
 
@@ -95,12 +96,15 @@ export function ReceiptVouchers({ hidden, onOpenCheques }) {
   }, [chequesQuery.data, needle]);
 
   const cashMutation = useMutation({
-    mutationFn: () =>
-      createPayment({
+    mutationFn: () => {
+      const parsed = parseDecimalAmount(amount);
+      if (!parsed) return Promise.reject(new Error('المبلغ غير صالح'));
+      return createPayment({
         client_id: clientId,
-        amount: Number(amount) || 0,
+        amount: parsed,
         date: payDate || todayIso(),
-      }),
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       setCashOpen(false);

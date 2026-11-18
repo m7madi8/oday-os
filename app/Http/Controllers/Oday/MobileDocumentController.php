@@ -21,6 +21,10 @@ class MobileDocumentController extends Controller
 
     public function assignProject(Request $request, Document $document, OdayDocumentService $service): JsonResponse
     {
+        if ((int) $document->company_id !== (int) auth()->user()->companyId()) {
+            abort(404);
+        }
+
         $request->validate([
             'project_id' => 'required|string',
         ]);

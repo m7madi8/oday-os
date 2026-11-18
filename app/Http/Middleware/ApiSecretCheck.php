@@ -32,7 +32,10 @@ class ApiSecretCheck
             return $next($request);
         }
 
-        if ($request->header('X-API-SECRET') && ($request->header('X-API-SECRET') == config('ninja.api_secret'))) {
+        $given = (string) $request->header('X-API-SECRET', '');
+        $expected = (string) config('ninja.api_secret');
+
+        if ($given !== '' && hash_equals($expected, $given)) {
             return $next($request);
         } else {
             $error = [

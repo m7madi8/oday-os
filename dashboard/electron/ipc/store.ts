@@ -1,8 +1,7 @@
-import { app, ipcMain, safeStorage } from 'electron';
+import { app, ipcMain, safeStorage, type IpcMainInvokeEvent } from 'electron';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-
-const ALLOWED_KEYS = new Set(['token', 'user', 'company', 'serverUrl', 'dashboardUrl']);
+import { isAllowedKey, planStorage, readStoredValue } from './vaultCodec';
 
 type Vault = Record<string, string>;
 
@@ -26,57 +25,78 @@ function writeVault(vault: Vault) {
   writeFileSync(vaultPath(), JSON.stringify(vault), { encoding: 'utf8', mode: 0o600 });
 }
 
-function encrypt(value: string): string {
-  if (safeStorage.isEncryptionAvailable()) {
-    return `enc:${safeStorage.encryptString(value).toString('base64')}`;
+function encryptionAvailable() {
+  try {
+    return safeStorage.isEncryptionAvailable();
+  } catch {
+    return false;
   }
-  return `plain:${Buffer.from(value, 'utf8').toString('base64')}`;
 }
 
-function decrypt(value: string): string {
-  if (value.startsWith('enc:')) {
-    return safeStorage.decryptString(Buffer.from(value.slice(4), 'base64'));
-  }
-  if (value.startsWith('plain:')) {
-    return Buffer.from(value.slice(6), 'base64').toString('utf8');
-  }
-  return value;
+function encryptValue(value: string) {
+  return `enc:${safeStorage.encryptString(value).toString('base64')}`;
+}
+
+function decryptValue(payload: string) {
+  return safeStorage.decryptString(Buffer.from(payload, 'base64'));
+}
+
+function trustedSender(event: IpcMainInvokeEvent) {
+  const url = event.senderFrame?.url || '';
+  return (
+    url.startsWith('oday://') ||
+    url.startsWith('file://') ||
+    url.startsWith('http://') ||
+    url.startsWith('https://')
+  );
+}
+
+function purge(vault: Vault, key: string) {
+  if (!(key in vault)) return;
+  delete vault[key];
+  writeVault(vault);
 }
 
 export function readStoredKey(key: string): string | null {
-  if (!ALLOWED_KEYS.has(key)) return null;
-  const encoded = readVault()[key];
-  if (!encoded) return null;
+  if (!isAllowedKey(key)) return null;
+  const vault = readVault();
+  const reading = readStoredValue(key, vault[key]);
+  if (reading.action === 'missing') return null;
+  if (reading.action === 'purge') {
+    purge(vault, key);
+    return null;
+  }
+  if (reading.action === 'config') return reading.value;
   try {
-    return decrypt(encoded);
+    return decryptValue(reading.payload);
   } catch {
+    purge(vault, key);
     return null;
   }
 }
 
+function writeStoredKey(key: string, value: string) {
+  const plan = planStorage(key, value, encryptionAvailable());
+  if (!plan.ok) return false;
+  const vault = readVault();
+  vault[key] = plan.mode === 'encrypt' ? encryptValue(plan.value) : plan.stored;
+  writeVault(vault);
+  return true;
+}
+
 export function registerStoreIpc() {
-  ipcMain.handle('oday:store:get', (_event, key: string) => {
-    if (!ALLOWED_KEYS.has(key)) return null;
-    const encoded = readVault()[key];
-    if (!encoded) return null;
-    try {
-      return decrypt(encoded);
-    } catch {
-      return null;
-    }
+  ipcMain.handle('oday:store:get', (event, key: string) => {
+    if (!trustedSender(event) || typeof key !== 'string') return null;
+    return readStoredKey(key);
   });
 
-  ipcMain.handle('oday:store:set', (_event, key: string, value: string) => {
-    if (!ALLOWED_KEYS.has(key)) return false;
-    if (typeof value !== 'string') return false;
-    const vault = readVault();
-    vault[key] = encrypt(value);
-    writeVault(vault);
-    return true;
+  ipcMain.handle('oday:store:set', (event, key: string, value: string) => {
+    if (!trustedSender(event) || typeof key !== 'string' || typeof value !== 'string') return false;
+    return writeStoredKey(key, value);
   });
 
-  ipcMain.handle('oday:store:delete', (_event, key: string) => {
-    if (!ALLOWED_KEYS.has(key)) return false;
+  ipcMain.handle('oday:store:delete', (event, key: string) => {
+    if (!trustedSender(event) || typeof key !== 'string' || !isAllowedKey(key)) return false;
     const vault = readVault();
     delete vault[key];
     writeVault(vault);

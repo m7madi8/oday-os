@@ -2,44 +2,23 @@
 
 namespace App\Providers;
 
+use App\Services\Oday\Backup\BackupEngine;
+use App\Services\Oday\Backup\BackupRunner;
+use App\Services\Oday\OdayDashboardTokenGuard;
 use Illuminate\Support\ServiceProvider;
-use RuntimeException;
 
 class OdayServiceProvider extends ServiceProvider
 {
-    public function boot(): void
+    public function register(): void
     {
-        if ($this->app->runningUnitTests()) {
-            return;
-        }
-
-        $this->ensureRequiredEnv();
+        $this->app->bind(BackupRunner::class, BackupEngine::class);
     }
 
-    private function ensureRequiredEnv(): void
+    public function boot(): void
     {
-        $required = [
-            'GOOGLE_CLIENT_ID' => config('oday.google_drive_backup.client_id'),
-            'GOOGLE_CLIENT_SECRET' => config('oday.google_drive_backup.client_secret'),
-            'GOOGLE_REDIRECT_URI' => config('oday.backup.google_redirect_uri'),
-            'BACKUP_ENCRYPTION_KEY' => config('oday.backup.encryption_key'),
-            'CRON_SECRET' => config('oday.backup.cron_secret'),
-        ];
+        OdayDashboardTokenGuard::ensureProductionConfigured($this->app);
 
-        $missing = [];
-        foreach ($required as $name => $value) {
-            if (! is_string($value) || trim($value) === '') {
-                $missing[] = $name;
-            }
-        }
-
-        if ($missing === []) {
-            return;
-        }
-
-        throw new RuntimeException(
-            'ODAY OS backup is not configured. Set these environment variables in .env: '
-            . implode(', ', $missing)
-        );
+        // Backup and Google OAuth settings are validated when those features are used
+        // (see App\Services\Oday\Backup\OdayBackupRequirements).
     }
 }

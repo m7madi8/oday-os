@@ -1,12 +1,16 @@
 import { getDesktop, isDesktop } from '../desktop';
 
+import { isLocalToken as isLocalTokenFromOffice } from './office';
+
 const TOKEN_KEY = 'oday.token';
 const USER_KEY = 'oday.user';
 const COMPANY_KEY = 'oday.company';
-export const LOCAL_TOKEN_PREFIX = 'local:';
+export { LOCAL_TOKEN_PREFIX } from './office';
+
+let memorySession = null;
 
 export function isLocalToken(token) {
-  return String(token || '').startsWith(LOCAL_TOKEN_PREFIX);
+  return isLocalTokenFromOffice(token);
 }
 
 function webGet(key) {
@@ -22,6 +26,11 @@ function webClear(key) {
 }
 
 export async function saveSession(payload) {
+  memorySession = {
+    token: payload.token,
+    user: payload.user,
+    company: payload.company,
+  };
   const store = isDesktop() ? getDesktop()?.store : null;
   if (store) {
     await store.set('token', payload.token);
@@ -36,6 +45,9 @@ export async function saveSession(payload) {
 
 export async function loadSession() {
   try {
+    if (memorySession?.token && memorySession.user && memorySession.company) {
+      return memorySession;
+    }
     let token;
     let userRaw;
     let companyRaw;
@@ -62,12 +74,14 @@ export async function loadSession() {
 }
 
 export async function getToken() {
+  if (memorySession?.token) return memorySession.token;
   const store = isDesktop() ? getDesktop()?.store : null;
   if (store) return store.get('token');
   return webGet(TOKEN_KEY);
 }
 
 export async function clearSession() {
+  memorySession = null;
   const store = isDesktop() ? getDesktop()?.store : null;
   if (store) {
     await Promise.all([

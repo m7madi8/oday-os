@@ -14,13 +14,17 @@ class OdayDashboardController extends Controller
 {
     public function index(OdayDashboardStore $store): JsonResponse
     {
-        return response()->json(['items' => $store->all()]);
+        return response()->json(['items' => $this->visibleItems($store->all())]);
     }
 
     public function show(string $key, OdayDashboardStore $store): JsonResponse
     {
         if ($error = $this->invalidKey($key)) {
             return $error;
+        }
+
+        if ($this->hidesOfficeKey($key)) {
+            return response()->json(['message' => 'not found'], 404);
         }
 
         $row = $store->all()[$key] ?? null;
@@ -49,6 +53,10 @@ class OdayDashboardController extends Controller
             return response()->json(['message' => 'value too large'], 422);
         }
 
+        if ($this->hidesOfficeKey($key)) {
+            return response()->json(['message' => 'not found'], 404);
+        }
+
         $updatedAt = (int) $request->input('updated_at', (int) round(microtime(true) * 1000));
         $row = $store->put($key, $value, $updatedAt);
 
@@ -66,5 +74,38 @@ class OdayDashboardController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Office settings are stored per company by MobileOfficeSettingsController.
+     * The unscoped key and another company's key are not readable or writable here.
+     *
+     * @param  array<string, mixed>  $items
+     * @return array<string, mixed>
+     */
+    private function visibleItems(array $items): array
+    {
+        $visible = [];
+        foreach ($items as $key => $row) {
+            if ($this->hidesOfficeKey((string) $key)) {
+                continue;
+            }
+            $visible[$key] = $row;
+        }
+
+        return $visible;
+    }
+
+    private function hidesOfficeKey(string $key): bool
+    {
+        if ($key === 'office-settings') {
+            return true;
+        }
+        if (! str_starts_with($key, 'office-settings:')) {
+            return false;
+        }
+        $companyId = auth()->user()?->companyId();
+
+        return $companyId === null || $key !== 'office-settings:'.(int) $companyId;
     }
 }

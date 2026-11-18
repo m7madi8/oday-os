@@ -2,6 +2,7 @@ node_modules
 dist
 dist-electron
 release
+release-phase6
 *.rar
 .DS_Store
 .env

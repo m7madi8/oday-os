@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
-final class BackupEngine
+final class BackupEngine implements BackupRunner
 {
     public function __construct(
         private BackupSequenceAllocator $sequences,
@@ -20,6 +20,8 @@ final class BackupEngine
 
     public function run(int $companyId, string $type = OdayBackupRun::TYPE_MANUAL): OdayBackupRun
     {
+        OdayBackupRequirements::assertEncryptionConfigured();
+
         $lock = Cache::lock('oday:backup:run:'.$companyId, 3600);
         if (! $lock->get()) {
             throw new \RuntimeException('backup_already_running');
@@ -78,6 +80,7 @@ final class BackupEngine
             'seq' => $seq,
             'file_name' => $fileName,
             'type' => $type,
+            'archive_scope' => 'company',
             'started_at' => now(),
             'status' => OdayBackupRun::STATUS_RUNNING,
             'drive_status' => $settings->drive_enabled ? 'pending' : 'skipped',

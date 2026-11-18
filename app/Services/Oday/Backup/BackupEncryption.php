@@ -10,12 +10,9 @@ final class BackupEncryption
 
     public static function keyMaterial(): string
     {
-        $raw = (string) config('oday.backup.encryption_key');
-        if ($raw === '') {
-            throw new RuntimeException('BACKUP_ENCRYPTION_KEY is not configured');
-        }
+        OdayBackupRequirements::assertEncryptionConfigured();
 
-        return hash('sha256', $raw, true);
+        return hash('sha256', (string) config('oday.backup.encryption_key'), true);
     }
 
     public static function encrypt(string $plaintext): string

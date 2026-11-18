@@ -14,6 +14,7 @@ use App\Services\Oday\OdayChequeStatusService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class OdayChequeService
@@ -179,28 +180,36 @@ class OdayChequeService
 
     public function transition(OdayCheque $cheque, User $user, string $status, ?string $reason): OdayCheque
     {
-        $old = (string) $cheque->status;
-        $this->statuses->assertTransition($cheque, $status);
-        $this->statuses->assertReason($status, $reason);
+        return DB::transaction(function () use ($cheque, $user, $status, $reason) {
+            $cheque = OdayCheque::query()->whereKey($cheque->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($old === $status) {
-            return $cheque;
-        }
+            $old = (string) $cheque->status;
+            $this->statuses->assertTransition($cheque, $status);
+            $this->statuses->assertReason($status, $reason);
 
-        $cheque->status = $status;
-        if ($this->statuses->requiresReason($status)) {
-            $cheque->status_reason = $reason;
-        }
-        $cheque->updated_by_user_id = $user->id;
-        $cheque->save();
+            if ($old === $status) {
+                return $cheque;
+            }
 
-        $this->lifecycle->recordTransition($cheque, $old, $status, $reason, $user);
+            $cheque->updated_by_user_id = $user->id;
+            if ($this->statuses->requiresReason($status)) {
+                $cheque->status_reason = $reason;
+            }
 
-        if ($status === OdayCheque::STATUS_CLEARED) {
-            $cheque = $this->clearing->clear($cheque, $user);
-        }
+            if ($status === OdayCheque::STATUS_CLEARED) {
+                $cheque = $this->clearing->clear($cheque, $user);
+                $this->lifecycle->recordTransition($cheque, $old, $status, $reason, $user);
 
-        return $cheque->fresh(['client', 'vendor', 'project', 'invoice', 'scanDocument', 'statusHistories']);
+                return $cheque->fresh(['client', 'vendor', 'project', 'invoice', 'scanDocument', 'statusHistories']);
+            }
+
+            $cheque->status = $status;
+            $cheque->save();
+
+            $this->lifecycle->recordTransition($cheque, $old, $status, $reason, $user);
+
+            return $cheque->fresh(['client', 'vendor', 'project', 'invoice', 'scanDocument', 'statusHistories']);
+        });
     }
 
     public function softDelete(OdayCheque $cheque, User $user): void

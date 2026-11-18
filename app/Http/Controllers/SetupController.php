@@ -266,7 +266,10 @@ class SetupController extends Controller
 
     public function update()
     {
-        if (! request()->has('secret') || (request()->input('secret') != config('ninja.update_secret'))) {
+        $expected = (string) config('ninja.update_secret');
+        $given = request()->has('secret') ? (string) request()->input('secret') : '';
+
+        if ($expected === '' || ! hash_equals($expected, $given)) {
             return redirect('/');
         }
 

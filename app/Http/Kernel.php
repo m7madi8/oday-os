@@ -12,6 +12,7 @@
 
 namespace App\Http;
 
+use App\Http\Middleware\EnsureOdayBackupSuperUser;
 use App\Http\Middleware\OdayDashboardAuth;
 use App\Http\Middleware\Cors;
 use App\Http\Middleware\SetDb;
@@ -26,6 +27,7 @@ use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\ContactSetDb;
 use App\Http\Middleware\QueryLogging;
+use App\Http\Middleware\RequireHttps;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\UserVerified;
 use App\Http\Middleware\VendorLocale;
@@ -76,6 +78,7 @@ class Kernel extends HttpKernel
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,
         TrustProxies::class,
+        RequireHttps::class,
         Cors::class,
     ];
 
@@ -138,6 +141,7 @@ class Kernel extends HttpKernel
         'can' => Authorize::class,
         'cors' => Cors::class,
         'oday.token' => OdayDashboardAuth::class,
+        'oday.backup.superuser' => EnsureOdayBackupSuperUser::class,
         'cron.secret' => \App\Http\Middleware\VerifyCronSecret::class,
         'guest' => RedirectIfAuthenticated::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,

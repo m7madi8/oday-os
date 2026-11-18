@@ -2,10 +2,12 @@ import {
   ArchiveX,
   Banknote,
   BarChart3,
+  Files,
   FileText,
   FolderKanban,
   LayoutDashboard,
   Receipt,
+  ScrollText,
   Settings as SettingsIcon,
   Users,
   Wallet,
@@ -24,8 +26,10 @@ export const NAV_GROUPS = [
     items: [
       { id: 'projects', label: 'المشاريع', icon: FolderKanban },
       { id: 'clients', label: 'العملاء', icon: Users },
+      { id: 'documents', label: 'الملفات', icon: Files },
       { id: 'invoices', label: 'الفواتير', icon: FileText },
       { id: 'receipts', label: 'سندات القبض', icon: Receipt },
+      { id: 'checks', label: 'الشيكات', icon: ScrollText },
     ],
   },
   {

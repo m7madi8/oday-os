@@ -42,6 +42,7 @@ import {
   navigateApp,
   pageIdFromPath,
   parseChequeRoute,
+  pathForPage,
   subscribeAppRoute,
 } from './lib/routing/appRoutes';
 
@@ -75,9 +76,11 @@ export default function App() {
     if (nextPage === 'checks') {
       const sub = parseChequeRoute(getAppPath());
       if (!sub) navigateApp('/cheques');
-    } else if (parseChequeRoute(getAppPath())) {
-      navigateApp('/', { replace: true });
+      return;
     }
+    const target = pathForPage(nextPage);
+    const current = (getAppPath() || '/').split('?')[0].replace(/\/+$/, '') || '/';
+    if (current !== target) navigateApp(target);
   }, []);
 
   useEffect(() => {

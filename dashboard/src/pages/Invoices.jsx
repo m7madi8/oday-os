@@ -12,6 +12,7 @@ import { Sheet } from '../components/ui/Sheet';
 import { ClientSelect } from '../components/ui/ResourcePage';
 import { ErrorState, GhostButton, LoadingBlock, PrimaryButton } from '../components/ui/Actions';
 import { TextInput } from '../components/settings/Fields';
+import { parseDecimalAmount } from '../lib/money/decimalAmount';
 import { showToast } from '../lib/toast';
 import { openOrSaveBlob } from '../lib/files';
 import {
@@ -64,12 +65,15 @@ export function Invoices({ hidden }) {
   const shown = filtered.length;
 
   const mutation = useMutation({
-    mutationFn: () =>
-      createInvoice({
+    mutationFn: () => {
+      const costAmount = parseDecimalAmount(cost);
+      if (!costAmount) return Promise.reject(new Error('المبلغ غير صالح'));
+      return createInvoice({
         client_id: clientId,
         date: todayIso(),
-        line_items: [{ quantity: 1, cost: Number(cost) || 0, notes, product_key: notes }],
-      }),
+        line_items: [{ quantity: 1, cost: costAmount, notes, product_key: notes }],
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       setOpen(false);

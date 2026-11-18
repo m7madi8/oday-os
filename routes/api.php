@@ -63,6 +63,7 @@ use App\Http\Controllers\Oday\ChequeBankLogoController;
 use App\Http\Controllers\Oday\ChequePrintCalibrationController;
 use App\Http\Controllers\Oday\ChequeTemplateOverrideController;
 use App\Http\Controllers\Oday\EmployeeController;
+use App\Http\Controllers\Oday\OfficeReportController;
 use App\Http\Controllers\PasskeyController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentNotificationWebhookController;
@@ -350,6 +351,7 @@ Route::group(['middleware' => ['throttle:api', 'token_auth', 'valid_json','local
     Route::get('payroll/summary', [EmployeeController::class, 'summary'])->name('payroll.summary');
     Route::get('payroll/payments', [EmployeeController::class, 'payments'])->name('payroll.payments');
     Route::post('employees/{employee}/pay', [EmployeeController::class, 'pay'])->name('employees.pay');
+    Route::get('reports/office-summary', [OfficeReportController::class, 'show'])->name('reports.office_summary');
     Route::resource('employees', EmployeeController::class)->except(['create', 'edit']);
 
     Route::resource('payments', PaymentController::class); // name = (payments. index / create / show / update / destroy / edit

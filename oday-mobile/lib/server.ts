@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { acceptServerUrl, appStage, resolveApiUrl } from './serverPolicy';
 
 const SERVER_KEY = 'oday.serverUrl';
 
@@ -22,18 +23,21 @@ export function normalizeServerUrl(value: string) {
 }
 
 export function defaultServerUrl() {
-  if (Platform.OS === 'web') return 'http://127.0.0.1:8000';
-  const fromEnv = normalizeServerUrl(process.env.EXPO_PUBLIC_API_URL ?? '');
+  const stage = appStage(process.env.EXPO_PUBLIC_APP_ENV);
+  const fromEnv = acceptServerUrl(stage, normalizeServerUrl(process.env.EXPO_PUBLIC_API_URL ?? ''));
   if (fromEnv) return fromEnv;
+  if (stage === 'development' && Platform.OS === 'web') return 'http://127.0.0.1:8000';
   return '';
 }
 
 export function getApiUrl() {
-  const stored = normalizeServerUrl(runtimeUrl);
-  if (stored) return stored;
-  const env = defaultServerUrl();
-  if (env) return env;
-  return 'http://127.0.0.1:8000';
+  const stage = appStage(process.env.EXPO_PUBLIC_APP_ENV);
+  return resolveApiUrl({
+    stage,
+    stored: normalizeServerUrl(runtimeUrl),
+    envUrl: normalizeServerUrl(process.env.EXPO_PUBLIC_API_URL ?? ''),
+    allowDevelopmentFallback: stage === 'development',
+  });
 }
 
 export function getStoredServerUrl() {
@@ -41,12 +45,16 @@ export function getStoredServerUrl() {
 }
 
 export async function loadStoredServerUrl() {
+  const stage = appStage(process.env.EXPO_PUBLIC_APP_ENV);
   try {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      runtimeUrl = normalizeServerUrl(window.localStorage.getItem(SERVER_KEY) ?? '');
-    } else {
-      const stored = await SecureStore.getItemAsync(SERVER_KEY);
-      runtimeUrl = normalizeServerUrl(stored ?? '');
+    const raw = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? window.localStorage.getItem(SERVER_KEY) ?? ''
+      : (await SecureStore.getItemAsync(SERVER_KEY)) ?? '';
+    const accepted = acceptServerUrl(stage, normalizeServerUrl(raw));
+    runtimeUrl = accepted;
+    if (raw && !accepted) {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') window.localStorage.removeItem(SERVER_KEY);
+      else await SecureStore.deleteItemAsync(SERVER_KEY);
     }
   } catch {
     runtimeUrl = '';
@@ -55,7 +63,7 @@ export async function loadStoredServerUrl() {
 }
 
 export async function persistServerUrl(value: string) {
-  const next = normalizeServerUrl(value);
+  const next = acceptServerUrl(appStage(process.env.EXPO_PUBLIC_APP_ENV), normalizeServerUrl(value));
   runtimeUrl = next;
   if (next) {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {

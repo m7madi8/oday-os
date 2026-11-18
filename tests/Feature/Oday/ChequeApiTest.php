@@ -5,6 +5,7 @@ namespace Tests\Feature\Oday;
 use App\Models\Client;
 use App\Models\OdayCheque;
 use App\Models\OdayChequeStatusHistory;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\Oday\OdayChequeStatusService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -164,6 +165,28 @@ class ChequeApiTest extends TestCase
         $currencies = $response->json('data.currencies');
         $this->assertArrayHasKey('ILS', $currencies);
         $this->assertArrayHasKey('USD', $currencies);
+    }
+
+    public function test_clearing_incoming_cheque_creates_single_payment(): void
+    {
+        $cheque = $this->createIncomingCheque('PAY-CLR-1', '250.00');
+        $this->advanceTo($cheque, OdayCheque::STATUS_PROCESSING);
+
+        $paymentsBefore = Payment::query()->count();
+
+        $this->withHeaders($this->apiHeaders())->postJson("/api/v1/cheques/{$cheque->hashed_id}/transition", [
+            'status' => OdayCheque::STATUS_CLEARED,
+        ])->assertOk();
+
+        $cheque->refresh();
+        $this->assertNotNull($cheque->payment_id);
+        $this->assertSame(1, Payment::query()->count() - $paymentsBefore);
+
+        $this->withHeaders($this->apiHeaders())->postJson("/api/v1/cheques/{$cheque->hashed_id}/transition", [
+            'status' => OdayCheque::STATUS_CLEARED,
+        ])->assertOk();
+
+        $this->assertSame(1, Payment::query()->count() - $paymentsBefore);
     }
 
     public function test_office_scoping_blocks_other_company(): void

@@ -10,7 +10,7 @@ return [
     'firm' => 'Oday Abu Doha Architects',
     'product' => 'لوحة التحكم — عدي أبو ضحى',
     'dashboard_url' => rtrim(env('ODAY_DASHBOARD_URL', env('REACT_URL', 'http://localhost:5173')), '/'),
-    'dashboard_token' => env('ODAY_DASHBOARD_TOKEN', 'oday-office-sync'),
+    'dashboard_token' => env('ODAY_DASHBOARD_TOKEN', ''),
     'ai' => [
         'api_key' => env('ODAY_AI_API_KEY', ''),
         'base_url' => env('ODAY_AI_BASE_URL', 'https://api.openai.com/v1'),

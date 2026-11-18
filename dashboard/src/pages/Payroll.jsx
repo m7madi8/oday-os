@@ -17,6 +17,7 @@ import { Sheet } from '../components/ui/Sheet';
 import { ErrorState, GhostButton, LoadingBlock, PrimaryButton } from '../components/ui/Actions';
 import { Segmented, TextArea, TextInput } from '../components/settings/Fields';
 import { showToast } from '../lib/toast';
+import { parseDecimalAmount } from '../lib/money/decimalAmount';
 import {
   approxUsdFromIls,
   filterPayrollPayments,
@@ -123,8 +124,10 @@ export function Payroll({ hidden }) {
     mutationFn: () => {
       const targetId = paying?.id || payEmployeeId;
       if (!targetId) throw new Error('اختر الموظف');
+      const parsed = parseDecimalAmount(payForm.amount);
+      if (!parsed) throw new Error('المبلغ غير صالح');
       return payEmployee(targetId, {
-        amount: Number(payForm.amount) || 0,
+        amount: parsed,
         period,
         paid_on: payForm.paid_on,
         method: payForm.method,

@@ -253,7 +253,7 @@ class Handler extends ExceptionHandler
             return response()->json(['message' => $exception->getMessage()], 400);
         } elseif ($request->expectsJson() && $this->isDatabaseConnectionFailure($exception)) {
             return response()->json([
-                'message' => 'تعذر الاتصال بقاعدة البيانات. شغّل MySQL على المنفذ 3306 وتأكد من إعدادات DB_HOST وDB_DATABASE في ملف .env.',
+                'message' => 'تعذر الاتصال بقاعدة البيانات.',
             ], 503);
         }
 

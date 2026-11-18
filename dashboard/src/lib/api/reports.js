@@ -16,3 +16,9 @@ export function startReport(type, payload = {}) {
 export function previewReport(hash) {
   return api(`/api/v1/reports/preview/${hash}`, { method: 'POST' });
 }
+
+export function fetchOfficeSummary({ year, month }) {
+  return api('/api/v1/reports/office-summary', {
+    query: { year, month },
+  });
+}

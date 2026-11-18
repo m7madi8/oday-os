@@ -11,12 +11,15 @@ Route::post('api/backup/run-scheduled', [OdayBackupController::class, 'runSchedu
 
 Route::prefix('api/backup')->middleware(['api', 'throttle:api', 'token_auth', 'locale'])->group(function () {
     Route::get('settings', [OdayBackupController::class, 'settingsShow']);
+    Route::get('runs', [OdayBackupController::class, 'runsIndex']);
+});
+
+Route::prefix('api/backup')->middleware(['api', 'throttle:api', 'token_auth', 'locale', 'oday.backup.superuser'])->group(function () {
     Route::put('settings', [OdayBackupController::class, 'settingsUpdate']);
     Route::post('test-local', [OdayBackupController::class, 'testLocal']);
     Route::get('google/connect', [OdayBackupController::class, 'googleConnect']);
     Route::delete('google', [OdayBackupController::class, 'googleDisconnect']);
     Route::post('run', [OdayBackupController::class, 'runManual']);
-    Route::get('runs', [OdayBackupController::class, 'runsIndex']);
     Route::post('runs/{id}/retry', [OdayBackupController::class, 'runRetry']);
     Route::get('runs/{id}/download', [OdayBackupController::class, 'runDownload']);
     Route::post('runs/{id}/local-synced', [OdayBackupController::class, 'markLocalSynced']);

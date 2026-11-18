@@ -1,5 +1,5 @@
 import { getApiRoot } from '../env';
-import { getToken, clearSession, isLocalToken } from '../auth/session';
+import { getToken, clearSession } from '../auth/session';
 import { getDesktop, isDesktop } from '../desktop';
 
 export class ApiError extends Error {
@@ -84,14 +84,30 @@ function errorMessage(json, fallback, status) {
     if (json.error) return String(json.error);
   }
   if (typeof json === 'string' && json.trim()) return json.trim();
-  if (status === 0) return 'تعذر الاتصال بالخادم. تحقق من تشغيل Laravel على المنفذ 8000.';
-  if (status === 503) {
-    return 'تعذر الاتصال بقاعدة البيانات. شغّل MySQL على المنفذ 3306 وتحقق من إعدادات DB في .env.';
-  }
-  if (status >= 500) {
-    return 'الخادم غير متاح أو تعذر معالجة الطلب. شغّل Laravel (php artisan serve --port=8000) وقاعدة البيانات.';
-  }
+  if (status === 0) return 'تعذر الاتصال بالخادم.';
+  if (status === 503) return 'تعذر الاتصال بقاعدة البيانات.';
+  if (status >= 500) return 'الخادم غير متاح أو تعذر معالجة الطلب.';
   return fallback;
+}
+
+function shouldEndSession(status, json) {
+  const message = String(json?.message || '').trim().toLowerCase();
+  const error = String(json?.error || '').trim().toLowerCase();
+  if (status === 403) return message === 'invalid token' || error === 'invalid token';
+  if (status === 401) {
+    if (message.includes('this action is unauthorized') || message.includes('لا صلاحية')) return false;
+    return true;
+  }
+  return false;
+}
+
+async function throwStatusError(response, json, token) {
+  if (token && shouldEndSession(response.status, json)) {
+    await clearSession();
+    onUnauthorized?.();
+  }
+  const fallback = response.status === 403 ? 'لا صلاحية لهذا الإجراء' : 'انتهت الجلسة';
+  throw new ApiError(errorMessage(json, fallback, response.status), response.status, json);
 }
 
 export async function api(path, options = {}) {
@@ -130,15 +146,10 @@ export async function api(path, options = {}) {
   const json = await parseBody(response);
 
   if (response.status === 401 || response.status === 403) {
-    if (isLocalToken(token)) {
-      return options.emptyAuth ?? null;
-    }
-    await clearSession();
-    onUnauthorized?.();
-    if (isDesktop() && response.status === 401) {
+    if (token && shouldEndSession(response.status, json) && isDesktop() && response.status === 401) {
       getDesktop()?.notify?.show({ title: 'ODAY OS', body: 'انتهت الجلسة. سجّل الدخول مجدداً.' });
     }
-    throw new ApiError(errorMessage(json, 'انتهت الجلسة', response.status), response.status, json);
+    await throwStatusError(response, json, token);
   }
 
   if (!response.ok) {
@@ -174,12 +185,13 @@ export async function apiBlob(path, options = {}) {
 
   emitOnline(true);
   if (response.status === 401 || response.status === 403) {
-    if (isLocalToken(token)) {
-      return new Blob();
+    let json = null;
+    try {
+      json = await parseBody(response);
+    } catch {
+      json = null;
     }
-    await clearSession();
-    onUnauthorized?.();
-    throw new ApiError('انتهت الجلسة', response.status);
+    await throwStatusError(response, json, token);
   }
   if (!response.ok) {
     throw new ApiError('تعذر تنزيل الملف', response.status);

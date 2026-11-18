@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as authApi from '@/lib/api/auth';
 import { setUnauthorizedHandler } from '@/lib/api/client';
-import { isLocalToken, isOfficeLogin, localOfficeSession } from '@/lib/auth/office';
+import { isLocalOfficeLoginEnabled, isLocalToken, tryLocalOfficeSession } from '@/lib/auth/office';
 import { clearSession, loadSession, saveSession, type StoredSession } from '@/lib/auth/session';
 import { invalidateFinance, queryClient } from '@/lib/query';
 import { loadStoredServerUrl } from '@/lib/server';
@@ -16,6 +16,15 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+async function restoreSession(): Promise<StoredSession | null> {
+  const stored = await loadSession();
+  if (stored?.token && isLocalToken(stored.token) && !isLocalOfficeLoginEnabled()) {
+    await clearSession();
+    return null;
+  }
+  return stored;
+}
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -42,7 +51,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       });
     });
     loadStoredServerUrl()
-      .then(() => loadSession())
+      .then(() => restoreSession())
       .then(setSession)
       .finally(() => setReady(true));
     return () => setUnauthorizedHandler(null);
@@ -58,13 +67,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
   }, [session]);
 
   const login = useCallback(async (email: string, password: string, otp?: string) => {
-    const payload = isOfficeLogin(email, password)
-      ? localOfficeSession()
-      : await authApi.login({
-          email,
-          password,
-          one_time_password: otp,
-        });
+    const local = tryLocalOfficeSession(email, password);
+    const payload =
+      local ??
+      (await authApi.login({
+        email,
+        password,
+        one_time_password: otp,
+      }));
     await saveSession(payload);
     setSession({ token: payload.token, user: payload.user, company: payload.company });
   }, []);

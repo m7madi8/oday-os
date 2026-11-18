@@ -19,6 +19,7 @@ class OdayBackupRun extends BaseModel
         'seq',
         'file_name',
         'type',
+        'archive_scope',
         'started_at',
         'finished_at',
         'size_bytes',

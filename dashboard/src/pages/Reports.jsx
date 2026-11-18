@@ -1,18 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, Package, Printer, Users } from 'lucide-react';
-import { listClients } from '../lib/api/clients';
-import { listExpenses } from '../lib/api/expenses';
-import { listInvoices } from '../lib/api/invoices';
-import { listPayments } from '../lib/api/payments';
-import { listProjects } from '../lib/api/projects';
+import { fetchOfficeSummary } from '../lib/api/reports';
 import { FONT_HEAD, MONTHS, YEARS, money } from '../theme';
 import { ErrorState, GhostButton, LoadingBlock } from '../components/ui/Actions';
 import { showToast } from '../lib/toast';
 import { openOrSaveBlob } from '../lib/files';
 import {
   buildReportCsv,
-  computeReportMetrics,
   periodTitle,
 } from '../lib/reports/reportMetrics';
 
@@ -67,20 +62,19 @@ function ReportEmpty({ icon: Icon, title, body }) {
   );
 }
 
-async function loadReportSource() {
-  const [payments, expenses, invoices, projects, clients] = await Promise.all([
-    listPayments({ per_page: 500 }),
-    listExpenses({ per_page: 500 }),
-    listInvoices({ per_page: 500, include: 'client' }),
-    listProjects({ per_page: 500, include: 'client' }),
-    listClients({ per_page: 500 }),
-  ]);
+function figure(value, label) {
+  if (label) return label;
+  return money(value, false);
+}
+
+function withMonthLabels(metrics, months) {
+  if (!metrics) return null;
   return {
-    payments: payments?.data || [],
-    expenses: expenses?.data || [],
-    invoices: invoices?.data || [],
-    projects: projects?.data || [],
-    clients: clients?.data || [],
+    ...metrics,
+    monthlySeries: (metrics.monthlySeries || []).map((row) => ({
+      ...row,
+      label: months[row.month - 1] || String(row.month),
+    })),
   };
 }
 
@@ -91,17 +85,20 @@ export function Reports() {
 
   const query = useQuery({
     queryKey: ['reports-dashboard', year, month],
-    queryFn: loadReportSource,
+    queryFn: () => fetchOfficeSummary({ year, month }),
   });
 
   const periodLabel = useMemo(() => periodTitle(year, month, MONTHS), [year, month]);
-
-  const metrics = useMemo(() => {
-    const payload = query.data || {};
-    return computeReportMetrics(payload, { year, month }, MONTHS);
-  }, [query.data, year, month]);
+  const metrics = useMemo(
+    () => withMonthLabels(query.data?.data, MONTHS),
+    [query.data, year, month],
+  );
 
   async function exportCsv() {
+    if (!metrics) {
+      showToast('لا توجد أرقام للتصدير', 'error');
+      return;
+    }
     try {
       const csv = buildReportCsv(metrics, { year, month, periodLabel });
       const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
@@ -121,8 +118,8 @@ export function Reports() {
     }
   }
 
-  const clientsWithActivity = metrics.clientRows.filter(
-    (row) => row.income > 0 || row.projectCount > 0,
+  const clientsWithActivity = (metrics?.clientRows || []).filter(
+    (row) => row.incomeLabel || (row.income && row.income !== '0.00' && row.income !== '0') || row.projectCount > 0,
   );
 
   return (
@@ -174,7 +171,7 @@ export function Reports() {
         <ErrorState message={query.error?.message} onRetry={() => query.refetch()} />
       ) : null}
 
-      {!query.isLoading && !query.isError ? (
+      {!query.isLoading && !query.isError && metrics ? (
         <>
           <section className="os-reports-section">
             <div className="os-reports-section__head">
@@ -186,23 +183,24 @@ export function Reports() {
             <div className="os-reports-metrics">
               <MetricCard
                 label="الدخل المحصل"
-                value={money(metrics.income, false)}
+                value={figure(metrics.income, metrics.incomeLabel)}
+                sub={metrics.currencyCode || undefined}
                 tone="income"
               />
               <MetricCard
                 label="مصاريف"
-                value={money(metrics.expenses, false)}
+                value={figure(metrics.expenses, metrics.expensesLabel)}
                 tone="expense"
               />
               <MetricCard
                 label="صافي الربح"
-                value={money(metrics.netProfit, false)}
-                tone={metrics.netProfit >= 0 ? 'income' : 'expense'}
+                value={figure(metrics.netProfit, metrics.netProfitLabel)}
+                tone={metrics.netNegative ? 'expense' : 'income'}
                 featured
               />
               <MetricCard
                 label="كل المستحقات المفتوحة"
-                value={money(metrics.openReceivables, false)}
+                value={figure(metrics.openReceivables, metrics.openReceivablesLabel)}
                 sub={`${metrics.openInvoiceCount} فاتورة`}
                 tone="expense"
               />
@@ -224,7 +222,7 @@ export function Reports() {
               />
               <MetricCard
                 label="متوسط الدخل الشهري"
-                value={money(metrics.avgMonthlyIncome, false)}
+                value={figure(metrics.avgMonthlyIncome, metrics.avgMonthlyIncomeLabel)}
                 sub="لكل شهر فعال"
                 tone="income"
               />
@@ -261,10 +259,10 @@ export function Reports() {
                   {metrics.monthlySeries.map((row) => (
                     <tr key={row.month}>
                       <td>{row.label}</td>
-                      <td className="os-num is-income">{money(row.income, false)}</td>
-                      <td className="os-num is-expense">{money(row.expenses, false)}</td>
-                      <td className={`os-num ${row.profit >= 0 ? 'is-income' : 'is-expense'}`}>
-                        {money(row.profit, false)}
+                      <td className="os-num is-income">{figure(row.income, row.incomeLabel)}</td>
+                      <td className="os-num is-expense">{figure(row.expenses, row.expensesLabel)}</td>
+                      <td className={`os-num ${row.profitNegative ? 'is-expense' : 'is-income'}`}>
+                        {figure(row.profit, row.profitLabel)}
                       </td>
                     </tr>
                   ))}
@@ -278,16 +276,16 @@ export function Reports() {
               <ul className="os-reports-kv">
                 <li>
                   <span>الدخل المحصل</span>
-                  <strong className="os-num is-income">{money(metrics.income, false)}</strong>
+                  <strong className="os-num is-income">{figure(metrics.income, metrics.incomeLabel)}</strong>
                 </li>
                 <li>
                   <span>مصاريف</span>
-                  <strong className="os-num is-expense">{money(metrics.expenses, false)}</strong>
+                  <strong className="os-num is-expense">{figure(metrics.expenses, metrics.expensesLabel)}</strong>
                 </li>
                 <li className="is-total">
                   <span>صافي الربح</span>
-                  <strong className={`os-num ${metrics.netProfit >= 0 ? 'is-income' : 'is-expense'}`}>
-                    {money(metrics.netProfit, false)}
+                  <strong className={`os-num ${metrics.netNegative ? 'is-expense' : 'is-income'}`}>
+                    {figure(metrics.netProfit, metrics.netProfitLabel)}
                   </strong>
                 </li>
               </ul>
@@ -308,7 +306,7 @@ export function Reports() {
                         <strong>{row.name}</strong>
                         <span>{row.projectCount} مشروع</span>
                       </div>
-                      <strong className="os-num is-income">{money(row.income, false)}</strong>
+                      <strong className="os-num is-income">{figure(row.income, row.incomeLabel)}</strong>
                     </li>
                   ))}
                 </ul>
@@ -330,7 +328,7 @@ export function Reports() {
                         <strong>{row.clientName}</strong>
                         <span>{row.number} · {row.dueDate}</span>
                       </div>
-                      <strong className="os-num is-expense">{money(row.balance, false)}</strong>
+                      <strong className="os-num is-expense">{figure(row.balance, row.balanceLabel)}</strong>
                     </li>
                   ))}
                 </ul>
@@ -352,8 +350,8 @@ export function Reports() {
                         <strong>{row.name}</strong>
                         <span>{row.type}</span>
                       </div>
-                      <strong className={`os-num ${row.profit >= 0 ? 'is-income' : 'is-expense'}`}>
-                        {money(row.profit, false)}
+                      <strong className={`os-num ${row.profitNegative ? 'is-expense' : 'is-income'}`}>
+                        {figure(row.profit, row.profitLabel)}
                       </strong>
                     </li>
                   ))}

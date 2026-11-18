@@ -96,7 +96,30 @@ export function goToChequeDetail(id, replace) {
   navigateApp(`/cheques/${encodeURIComponent(id)}`, { replace });
 }
 
+const PAGE_PATHS = {
+  dashboard: '/',
+  projects: '/projects',
+  clients: '/clients',
+  documents: '/documents',
+  invoices: '/invoices',
+  receipts: '/receipts',
+  payments: '/payments',
+  'dead-debts': '/dead-debts',
+  expenses: '/expenses',
+  payroll: '/payroll',
+  reports: '/reports',
+  settings: '/settings',
+  'ai-assistant': '/ai',
+};
+
+export function pathForPage(pageId) {
+  if (pageId === 'checks') return '/cheques';
+  return PAGE_PATHS[pageId] || '/';
+}
+
 export function pageIdFromPath(path) {
   if (parseChequeRoute(path)) return 'checks';
-  return null;
+  const normalized = (path || '/').split('?')[0].replace(/\/+$/, '') || '/';
+  const match = Object.entries(PAGE_PATHS).find(([, value]) => value === normalized);
+  return match ? match[0] : null;
 }

@@ -114,7 +114,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
 
-        app()->instance(TruthSource::class, new TruthSource());
+        $this->app->singleton(TruthSource::class, fn () => new TruthSource());
 
         /* Extension for custom mailers */
 

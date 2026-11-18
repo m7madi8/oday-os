@@ -10,6 +10,7 @@ import { useAuth } from '../lib/auth/AuthProvider';
 import { Sheet } from '../components/ui/Sheet';
 import { ErrorState, LoadingBlock, PrimaryButton } from '../components/ui/Actions';
 import { TextInput } from '../components/settings/Fields';
+import { parseDecimalAmount } from '../lib/money/decimalAmount';
 import { showToast } from '../lib/toast';
 import {
   EXPENSE_TYPE_OPTIONS,
@@ -60,12 +61,15 @@ export function Expenses({ hidden }) {
   const shown = filtered.length;
 
   const mutation = useMutation({
-    mutationFn: () =>
-      createExpense({
-        amount: Number(amount) || 0,
+    mutationFn: () => {
+      const parsed = parseDecimalAmount(amount);
+      if (!parsed) return Promise.reject(new Error('المبلغ غير صالح'));
+      return createExpense({
+        amount: parsed,
         date: todayIso(),
         public_notes: notes,
-      }),
+      });
+    },
     onSuccess: async () => {
       await invalidateFinance();
       setOpen(false);

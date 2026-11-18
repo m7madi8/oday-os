@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const TOKEN = process.env.ODAY_DASHBOARD_TOKEN || process.env.VITE_ODAY_TOKEN || 'oday-office-sync';
+/** Dev-only Vite plugin; never ship a default sync secret. */
+const TOKEN = String(process.env.ODAY_DASHBOARD_TOKEN || process.env.VITE_ODAY_TOKEN || '').trim();
 const storePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data/store.json');
 
 function ensureStore() {
@@ -58,7 +59,7 @@ async function handle(req, res) {
   }
 
   const token = req.headers['x-oday-token'];
-  if (token !== TOKEN) {
+  if (!TOKEN || token !== TOKEN) {
     send(res, 401, { message: 'unauthorized' });
     return true;
   }
